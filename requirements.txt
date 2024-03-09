@@ -1,0 +1,8 @@
+fastapi~=0.110.0
+pydantic~=2.6.3
+pymongo~=4.6.2
+uvicorn~=0.28.0
+python-multipart~=0.0.9
+pydub~=0.25.1
+whisper~=1.1.10
+transformers~=4.38.2

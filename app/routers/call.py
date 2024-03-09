@@ -1,37 +1,19 @@
-from fastapi import FastAPI, HTTPException
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
-from pymongo import MongoClient
-from pymongo.errors import ServerSelectionTimeoutError
-from typing import List
-from bson import ObjectId
-from ApiRequest.blog import schemas
-import shutil
 import os
-from fastapi import FastAPI, File, UploadFile
+import shutil
+from typing import List
 
-# Define the path where you want to save the uploaded MP3 files
-UPLOAD_FOLDER = "./mp3"
+from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi.responses import JSONResponse
 
-# Ensure the specified folder exists, create it if necessary
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+from app.database.schema import CallSchema
+from app.config.config import Configurations
+from app.database.db import connect_to_database
 
+router = APIRouter()
 
-uri = "mongodb+srv://erandaabewardhana:19765320@cluster0.7coezqv.mongodb.net/users?retryWrites=true&w=majority"
-client = MongoClient(uri)
+db = connect_to_database()
+collection = db.get_collection('calls')
 
-# Check if the connection to MongoDB is successful
-try:
-    client.server_info()  # Using server_info to check connection
-    print("Connected to MongoDB!")
-except ServerSelectionTimeoutError as e:
-    print(f"Error connecting to MongoDB: {e}")
-
-app = FastAPI()
-
-
-db = client.get_database()
-collection = db['calls']
 # Counter for user IDs
 call_id_counter = db.get_collection('counters').find_one_and_update(
     {'_id': 'call_id'},
@@ -40,8 +22,9 @@ call_id_counter = db.get_collection('counters').find_one_and_update(
     return_document=True
 )
 
-@app.post("/allcalls", response_model=schemas.CallSchema)
-def create_user(request: schemas.CallSchema):
+
+@router.post("/allcalls", response_model=CallSchema)
+def create_user(request: CallSchema):
     # Use the incremented user_id_counter value as the _id
     call_id = call_id_counter['seq']
     call_data = request.dict()
@@ -51,10 +34,11 @@ def create_user(request: schemas.CallSchema):
     return JSONResponse(content=call_data, status_code=201)
 
 
-class UserWithNaturalIDSchema(schemas.CallSchema):
+class UserWithNaturalIDSchema(CallSchema):
     natural_id: int
 
-@app.get("/getallcalls", response_model=List[UserWithNaturalIDSchema])
+
+@router.get("/getallcalls", response_model=List[UserWithNaturalIDSchema])
 def read_all_calls():
     all_calls = collection.find({})
     calls_with_object_id = [
@@ -63,18 +47,17 @@ def read_all_calls():
     return calls_with_object_id
 
 
-@app.delete("/delectallcall", response_model=dict)
+@router.delete("/delectallcall", response_model=dict)
 def delete_all_blogs():
     deleted_result = collection.delete_many({})
-    
+
     # Reset the user ID counter to 1
     db.get_collection('counters').update_one({'_id': 'call_id'}, {'$set': {'seq': 1}})
-    
+
     return {"message": f"{deleted_result.deleted_count} blogs deleted, call ID counter reset"}
 
 
-
-@app.get("/getcall/{call_id}", response_model=schemas.CallSchema)
+@router.get("/getcall/{call_id}", response_model=CallSchema)
 def read_blog(call_id: str):
     call = collection.find_one({"_id": call_id})
     if call:
@@ -82,10 +65,11 @@ def read_blog(call_id: str):
     else:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-@app.put("/updatecall/{call_id}", response_model=schemas.CallSchema)
-def update_blog(call_id: str, request: schemas.CallSchema):
+
+@router.put("/updatecall/{call_id}", response_model=CallSchema)
+def update_blog(call_id: str, request: CallSchema):
     updated_call = collection.find_one_and_update(
-        {"_id": call},
+        {"_id": call_id},
         {"$set": request.dict()},
         return_document=True
     )
@@ -94,7 +78,8 @@ def update_blog(call_id: str, request: schemas.CallSchema):
     else:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-@app.delete("/delectcall/{blog_id}", response_model=schemas.CallSchema)
+
+@router.delete("/delectcall/{call_id}", response_model=CallSchema)
 def delete_blog(call_id: str):
     deleted_call = collection.find_one_and_delete({"_id": call_id})
     if deleted_call:
@@ -102,11 +87,12 @@ def delete_blog(call_id: str):
     else:
         raise HTTPException(status_code=404, detail="Blog not found")
 
-@app.post("/uploadcalls")
+
+@router.post("/uploadcalls")
 async def upload_file(file: UploadFile = File(...)):
     try:
         # Save the file to the specified folder
-        file_path = os.path.join(UPLOAD_FOLDER, file.filename)
+        file_path = os.path.join(Configurations.UPLOAD_FOLDER, file.filename)
         with open(file_path, "wb") as mp3_file:
             shutil.copyfileobj(file.file, mp3_file)
 
