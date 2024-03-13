@@ -8,3 +8,5 @@ whisper~=1.1.10
 transformers~=4.38.2
 langchain~=0.1.11
 langchain-google-genai~=0.0.9
+
+motor~=3.3.2
