@@ -1,10 +1,9 @@
 import os
-
 import uvicorn
 from fastapi import FastAPI
 
-from config.config import Configurations
-from routers.call import router
+from app.config.config import Configurations
+from app.routers.call import router
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
