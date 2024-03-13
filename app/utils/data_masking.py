@@ -1,34 +1,34 @@
-from typing import List, Optional
-from transformers import pipeline, Pipeline
+from typing import Optional
+from transformers import pipeline
 
 
-def load_anonymizer(model_tag: str, use_gpu: bool = False) -> Optional[Pipeline]:
-    device = 0 if use_gpu else -1
-    try:
-        return pipeline("token-classification", model=model_tag, tokenizer=model_tag, device=device)
-    except Exception as exc:
-        print(f"Error loading Anonymizer model: \n\n{exc}")
+class DataMasker:
+    def __init__(self):
+        self.__model_name = "Isotonic/distilbert_finetuned_ai4privacy_v2"
+        self.masker = pipeline("token-classification", model=self.__model_name, tokenizer=self.__model_name, device=-1)
+        self.text_message = ""
+
+    def mask_text(self, text: str) -> Optional[str]:
+        self.text_message = text
+        model_output = self.masker(text, aggregation_strategy="simple")
+        if isinstance(model_output, list):
+            entity_map = self.__create_entity_map(model_output)
+            masked_data = self.__replace_entities(entity_map)
+            return masked_data
+        else:
+            print("Anonymizer output is not in the expected format")
         return None
 
+    def __create_entity_map(self, model_output: list[dict]) -> dict[str, str]:
+        entity_map = {}
+        for token in model_output:
+            start = token["start"]
+            end = token["end"]
+            entity = self.text_message[start: end]
+            entity_map[entity] = token["entity_group"]
+        return entity_map
 
-def create_entity_map(model_output: List[dict], text: str) -> dict:
-    return dict(
-        (text[token["start"]: token["end"]], token["entity_group"])
-        for token in model_output
-    )
-
-
-def replace_entities(text: str, entity_map: dict) -> str:
-    for word, entity_group in entity_map.items():
-        text = text.replace(word, f"[{entity_group}]")
-    return text
-
-
-def anonymize_text(input_sentence: str, anonymizer: Pipeline) -> Optional[str]:
-    output = anonymizer(input_sentence, aggregation_strategy="simple")
-    if isinstance(output, list):
-        entity_map = create_entity_map(output, input_sentence)
-        return replace_entities(input_sentence, entity_map)
-    else:
-        print("Anonymizer output is not in the expected format")
-    return None
+    def __replace_entities(self, entity_map: dict[str, str]) -> str:
+        for word, entity_group in entity_map.items():
+            self.text_message = self.text_message.replace(word, f"[{entity_group}]")
+        return self.text_message
