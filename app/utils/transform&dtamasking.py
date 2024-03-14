@@ -1,9 +1,7 @@
 import whisper
 import data_masking
 import os
-
 from app.config.config import Configurations
-
 
 def transcribe_audio(file_path):
     # Load the Whisper model
