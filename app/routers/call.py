@@ -5,7 +5,8 @@ from app.database.db import DatabaseConnector
 from app.models.call_record import CallRecord
 from app.models.action_result import ActionResult
 from app.config.config import Configurations
-from app.utils import data_masking
+from app.utils.data_masking import DataMasker
+from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.transcriber import Transcriber
 
@@ -13,7 +14,8 @@ call_router = APIRouter()
 
 db = DatabaseConnector("calls")
 summary_analyzer = SummaryAnalyzer()
-masking_analyzer = data_masking.DataMasker()
+masking_analyzer = DataMasker()
+sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
 
 
@@ -45,6 +47,7 @@ async def get_all_calls():
 
 @call_router.post("/uploadcalls")
 async def upload_file(file: UploadFile = File(...)):
+    print(file.filename)
     for filename in os.listdir(Configurations.UPLOAD_FOLDER):
         filepath = os.path.join(Configurations.UPLOAD_FOLDER, filename)
         # Check if it is a file
@@ -52,5 +55,6 @@ async def upload_file(file: UploadFile = File(...)):
             # Specify the path to your audio file
             transcription = transcriber.transcribe_audio(filepath)
             masking = masking_analyzer.mask_text(transcription)
-            print(masking)
+            sentiment_category = sentiment_analyzer.analyze(masking, ["Sad", "Anger", "Toxic", "Happy"])
+            print(masking, sentiment_category)
     return {"filename": file.filename}
