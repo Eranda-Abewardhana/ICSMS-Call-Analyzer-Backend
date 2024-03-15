@@ -5,7 +5,6 @@ from pymongo import ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError
 from bson import json_util
 import json
-from dotenv import dotenv_values
 
 from app.config.constants import TextMessages
 from app.models.action_result import ActionResult
