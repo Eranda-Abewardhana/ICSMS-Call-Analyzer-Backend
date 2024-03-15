@@ -1,2 +1,3 @@
 class Configurations:
-    UPLOAD_FOLDER = "./mp3"
+    UPLOAD_FOLDER = "./../data"
+    script_path = "transcribe_module.py"

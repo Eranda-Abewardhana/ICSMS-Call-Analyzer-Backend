@@ -6,13 +6,13 @@ from pydantic.functional_validators import BeforeValidator
 PyObjectId = Annotated[str, BeforeValidator(str)]
 
 
-class AnalyticsRecord(BaseModel):
+class CallRecord(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     call_id: str = Field(...)
-    sentiment_category: str = Field(...)
-    keywords: list[str] = Field(...)
-    summary: str = Field(...)
-    sentiment_score: float = Field(...)
+    transcription: str = Field(...)
+    call_recording_url: str = Field(...)
+    call_duration: str = Field(...)
+    call_date: str = Field(...)
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True
