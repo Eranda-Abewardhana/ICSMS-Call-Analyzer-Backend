@@ -1,7 +1,8 @@
 import os
 import shutil
-
 from fastapi import APIRouter, HTTPException, UploadFile, File
+
+from app.config.constants import TextMessages
 from app.database.db import DatabaseConnector
 from app.models.call_record import CallRecord
 from app.models.action_result import ActionResult
@@ -10,6 +11,7 @@ from app.utils.data_masking import DataMasker
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.transcriber import Transcriber
+from datetime import datetime
 
 call_router = APIRouter()
 
@@ -48,15 +50,10 @@ async def get_all_calls():
 
 @call_router.post("/uploadcalls")
 async def upload_file(file: UploadFile = File(...)):
+    action_result = ActionResult(status=True)
     print("Received filename:", file.filename)
     file_location = os.path.join(Configurations.UPLOAD_FOLDER, file.filename)
-    print("Saving file to:", file_location)
 
-    # Ensure the UPLOAD_FOLDER exists
-    if not os.path.exists(Configurations.UPLOAD_FOLDER):
-        os.makedirs(Configurations.UPLOAD_FOLDER)
-
-    # Save the uploaded file to the specified location
     try:
         file.file.seek(0)  # Ensure we're copying the file from the start
         with open(file_location, "wb") as file_out:
@@ -66,23 +63,28 @@ async def upload_file(file: UploadFile = File(...)):
         print(f"Error saving file: {e}")
         return {"error": "Error saving the file."}
 
-    # Close the file object to free resources
     await file.close()
-
+    action_result.error_message = []
     for filename in os.listdir(Configurations.UPLOAD_FOLDER):
         filepath = os.path.join(Configurations.UPLOAD_FOLDER, filename)
+        print(filepath)
         # Check if it is a file
         if os.path.isfile(filepath):
             # Specify the path to your audio file
-            transcription = transcriber.transcribe_audio(filepath)
-            masking = masking_analyzer.mask_text(transcription)
-            sentiment_category = sentiment_analyzer.analyze(masking, Configurations.sentiment_categories)
-            print(masking, sentiment_category)
-            print(masking)
+            try:
+                transcription = transcriber.transcribe_audio(filepath)
+                masked_transcription = masking_analyzer.mask_text(transcription)
+                call_record = CallRecord(transcription=masked_transcription, call_duration=0, call_date=datetime.now(), call_recording_url="dummy URL")
+                await db.add_entity(call_record)
 
-            if not os.path.exists(Configurations.SAVED_FOLDER):
-                os.makedirs(Configurations.SAVED_FOLDER)  # Create the mp3 folder if it doesn't exist
-            new_file_location = os.path.join(Configurations.SAVED_FOLDER, file.filename)
-            shutil.move(file_location, new_file_location)
+                if not os.path.exists(Configurations.SAVED_FOLDER):
+                    os.makedirs(Configurations.SAVED_FOLDER)  # Create the mp3 folder if it doesn't exist
 
-    return {"filename": file.filename}
+                new_file_location = os.path.join(Configurations.SAVED_FOLDER, file.filename)
+                shutil.move(file_location, new_file_location)
+            except Exception as e:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+                action_result.error_message.append((filename, e))
+
+    return action_result
