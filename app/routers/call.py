@@ -4,14 +4,17 @@ from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.constants import TextMessages
 from app.database.db import DatabaseConnector
+from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
 from app.models.action_result import ActionResult
 from app.config.config import Configurations
 from app.utils.data_masking import DataMasker
+from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.transcriber import Transcriber
 from datetime import datetime
+from app.config.config import Configurations
 
 call_router = APIRouter()
 
@@ -20,6 +23,7 @@ summary_analyzer = SummaryAnalyzer()
 masking_analyzer = DataMasker()
 sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
+keyword_extractor = KeywordExtractor()
 
 
 @call_router.post("/add-calls", response_model=ActionResult)
@@ -75,7 +79,15 @@ async def upload_file(file: UploadFile = File(...)):
                 transcription = transcriber.transcribe_audio(filepath)
                 masked_transcription = masking_analyzer.mask_text(transcription)
                 call_record = CallRecord(transcription=masked_transcription, call_duration=0, call_date=datetime.now(), call_recording_url="dummy URL")
-                await db.add_entity(call_record)
+                result = await db.add_entity(call_record)
+
+                sentiment_category = sentiment_analyzer.analyze(masked_transcription, Configurations.sentiment_categories)
+                keywords = keyword_extractor.extract_keywords(masked_transcription)
+                summary = summary_analyzer.analyze(masked_transcription)
+
+                analysis_record = AnalyticsRecord(sentiment_category=sentiment_category, keywords=keywords, summary=summary, call_id=result.data)
+                result = await db.add_entity(analysis_record)
+
 
                 if not os.path.exists(Configurations.SAVED_FOLDER):
                     os.makedirs(Configurations.SAVED_FOLDER)  # Create the mp3 folder if it doesn't exist
