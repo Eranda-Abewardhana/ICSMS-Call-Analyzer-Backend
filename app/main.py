@@ -2,6 +2,7 @@ import os
 import uvicorn
 from fastapi import FastAPI
 from app.routers.call import call_router
+from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.configuration import settings_configuration_router
 from app.config.config import Configurations
@@ -29,6 +30,7 @@ app.add_middleware(
 app.include_router(call_router)
 app.include_router(analytics_router)
 app.include_router(settings_configuration_router)
+app.include_router(settings_router)
 
 
 if __name__ == '__main__':
