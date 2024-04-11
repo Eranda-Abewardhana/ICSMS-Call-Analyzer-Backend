@@ -10,7 +10,7 @@ class CallRecord(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     transcription: str = Field(...)
     call_recording_url: str = Field(...)
-    call_duration: str = Field(...)
+    call_duration: int = Field(...)
     call_date: str = Field(...)
     model_config = ConfigDict(
         populate_by_name=True,

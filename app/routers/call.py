@@ -1,5 +1,11 @@
 import os
 import shutil
+from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import aioboto3
+import aiofiles
+import aiohttp
+import boto3
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.constants import TextMessages
@@ -67,24 +73,59 @@ async def upload_file(file: UploadFile = File(...)):
     action_result.error_message = []
     for filename in os.listdir(Configurations.UPLOAD_FOLDER):
         filepath = os.path.join(Configurations.UPLOAD_FOLDER, filename)
-        print(filepath)
+
         # Check if it is a file
         if os.path.isfile(filepath):
             # Specify the path to your audio file
             try:
                 transcription = transcriber.transcribe_audio(filepath)
                 masked_transcription = masking_analyzer.mask_text(transcription)
-                call_record = CallRecord(transcription=masked_transcription, call_duration=0, call_date=datetime.now(), call_recording_url="dummy URL")
+                print(masked_transcription)
+                call_record = CallRecord(transcription=masked_transcription, call_duration=0, call_date="tody",
+                                         call_recording_url="dummy URL")
                 await db.add_entity(call_record)
 
-                if not os.path.exists(Configurations.SAVED_FOLDER):
-                    os.makedirs(Configurations.SAVED_FOLDER)  # Create the mp3 folder if it doesn't exist
+                await upload_to_s3(filepath,Configurations.bucket_name ,filename,Configurations.aws_access_key_id,Configurations.aws_secret_access_key)
 
-                new_file_location = os.path.join(Configurations.SAVED_FOLDER, file.filename)
-                shutil.move(file_location, new_file_location)
+                # Remove the file after processing
+                os.remove(file_location)
+
             except Exception as e:
                 action_result.status = False
                 action_result.message = TextMessages.ACTION_FAILED
                 action_result.error_message.append((filename, e))
 
     return action_result
+
+
+async def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_secret_access_key):
+    try:
+        async with aiofiles.open(file_path, mode='rb') as file:
+            data = await file.read()
+            # Create an S3 client
+            s3_client = boto3.client(
+                's3',
+                aws_access_key_id=aws_access_key_id,
+                aws_secret_access_key=aws_secret_access_key
+            )
+
+            # Define a function to upload file in a synchronous manner
+            def upload_file():
+                return s3_client.put_object(
+                    Bucket=bucket_name,
+                    Key=object_name,
+                    Body=data
+                )
+
+            # Use ThreadPoolExecutor to run the synchronous S3 operation
+            with ThreadPoolExecutor() as executor:
+                loop = asyncio.get_running_loop()
+                response = await loop.run_in_executor(executor, upload_file)
+
+            # Check response status
+            if response['ResponseMetadata']['HTTPStatusCode'] == 200:
+                print("File uploaded successfully")
+            else:
+                print("Error uploading file:", response)
+    except Exception as e:
+        print(f"Error uploading file: {e}")
