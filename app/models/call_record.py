@@ -8,6 +8,8 @@ PyObjectId = Annotated[str, BeforeValidator(str)]
 
 class CallRecord(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    code : str = Field(...)
+    description: str = Field(...)
     transcription: str = Field(...)
     call_recording_url: str = Field(...)
     call_duration: int = Field(...)

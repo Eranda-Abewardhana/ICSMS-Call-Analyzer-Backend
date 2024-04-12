@@ -31,6 +31,7 @@ class DatabaseConnector:
             action_result.status = False
             action_result.message = TextMessages.ACTION_FAILED
         finally:
+
             return action_result
 
     async def delete_entity(self, entity_id: str) -> ActionResult:

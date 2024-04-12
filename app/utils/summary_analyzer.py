@@ -3,6 +3,7 @@ from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+
 os.environ['GOOGLE_API_KEY'] = "AIzaSyAkwOJZV94Wuq-96EFe17HP-O5VRk7sKyc"
 
 
@@ -10,13 +11,13 @@ class SummaryAnalyzer:
     def __init__(self):
         self.__model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
         self.__output_parser = StrOutputParser()
-        self.__template = ("Analyze the given summary {summary} and extract relevant information. Provide the analysis result.")
+        self.__template = "Generate a summary of the following text: {text}."
+        self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["text"])
 
-        self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["summary"])
-
-    def analyze(self, summary: str) -> str:
-        chain = self.__prompt_template | self.__model | self.__output_parser
-        analysis_result = chain.invoke({"summary": summary})
-        return analysis_result
-
-
+    def generate_summary(self, input_text: str) -> str:
+        try:
+            chain = self.__prompt_template | self.__model | self.__output_parser
+            summary = chain.invoke({"text": input_text})
+            return summary
+        except Exception as e:
+            return "Error: Unable to generate summary. Please try again later."
