@@ -12,7 +12,7 @@ from app.models.action_result import ActionResult
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
-        self.__connection_string = "mongodb+srv://erandaabewardhana:19765320@cluster0.7coezqv.mongodb.net/users?retryWrites=true&w=majority"
+        self.__connection_string = "mongodb+srv://rmb18132:4wgWW4X3q4RLLR2@cluster0.mzrfjau.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
         self.__database_name = "call_recordings"
         self.__client = motor.motor_asyncio.AsyncIOMotorClient(self.__connection_string)
         try:
@@ -29,6 +29,7 @@ class DatabaseConnector:
             action_result.message = TextMessages.INSERT_SUCCESS
         except Exception as e:
             action_result.status = False
+            print(e)
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
