@@ -47,11 +47,10 @@ async def delete_call_record(call_id: str):
     return action_result
 
 
-@call_router.delete("/delete-call-list/{call_id}&{analytics_id}", response_model=ActionResult)
-async def delete_call_record(call_id: str, analytics_id: str):
+@call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
+async def delete_call_record(call_id: str):
     action_result_call = await db.delete_entity(call_id)
-    action_result_analytics = await analytics_db.delete_entity(analytics_id)
-
+    action_result_analytics = await analytics_db.find_and_delete_entity({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
         raise HTTPException(status_code=404, detail="Record not found.")
     return action_result_call and action_result_analytics
