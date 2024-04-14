@@ -33,7 +33,7 @@ async def delete_analytics_record(analytics_id: str):
     return action_result
 
 
-@analytics_router.put("/get-call-summary/{analytics_id}", response_model=ActionResult)
+@analytics_router.put("/get-call-summary/{call_id}", response_model=ActionResult)
 async def get_call_summary(call_id: str):
     action_result = await db.find_entity({"call_id": call_id}, {"summary": 1, "_id": 0})
     return action_result
