@@ -18,10 +18,12 @@ from app.models.action_result import ActionResult
 from app.config.config import Configurations
 from app.routers.analytics import AnalyticsRouter
 from app.utils.data_masking import DataMasker
+from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.transcriber import Transcriber
 from datetime import datetime
+from app.config.config import Configurations
 
 call_router = APIRouter()
 
@@ -31,6 +33,7 @@ summary_analyzer = SummaryAnalyzer()
 masking_analyzer = DataMasker()
 sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
+keyword_extractor = KeywordExtractor()
 analytics_router = AnalyticsRouter()
 
 
