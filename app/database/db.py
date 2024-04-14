@@ -89,6 +89,26 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    async def find_entity(self, query_filter: dict, fields=None) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            if fields is None:
+                entity = await self.__collection.find_one(query_filter)
+            else:
+                entity = await self.__collection.find_one(query_filter, fields)
+
+            if entity is None:
+                action_result.message = TextMessages.NOT_FOUND
+            else:
+                json_data = json.loads(json_util.dumps(entity))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
     async def get_all_entities(self) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
