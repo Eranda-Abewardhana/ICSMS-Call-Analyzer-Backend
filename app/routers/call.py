@@ -35,14 +35,6 @@ async def get_call_record_by_id(call_id: str):
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
 async def delete_call_record(call_id: str):
-    action_result = await db.delete_entity(call_id)
-    if not action_result.success:
-        raise HTTPException(status_code=404, detail="Record not found.")
-    return action_result
-
-
-@call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
-async def delete_call_record(call_id: str):
     action_result_call = await db.delete_entity(call_id)
     action_result_analytics = await analytics_db.find_and_delete_entity({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
@@ -63,7 +55,7 @@ async def get_calls_list():
     call_list = []
     for call_record in call_collection:
         call_list_item = call_record
-        call_sentiment_data = await analytics_db.find_entity({"call_code": call_list_item["code"]}, {"sentiment_category": 1, "_id": 0})
+        call_sentiment_data = await analytics_db.find_entity({"call_id": call_list_item["_id"]}, {"sentiment_category": 1, "_id": 0})
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
         call_list.append(call_list_item)
@@ -117,7 +109,7 @@ async def upload_file(file: UploadFile = File(...)):
                 # print('Sentiment Score ' + sentiment_score)
 
                 analyzer_record = AnalyticsRecord(call_id=result.data, sentiment_category=sentiment,
-                                                  keywords=keywords, summary=summary)
+                                                  keywords=keywords, summary=summary, sentiment_score=0.4)
 
                 await analytics_db.add_entity(analyzer_record)
 

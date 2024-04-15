@@ -2,7 +2,6 @@ import os
 from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
-
 os.environ['GOOGLE_API_KEY'] = "AIzaSyAkwOJZV94Wuq-96EFe17HP-O5VRk7sKyc"
 
 
@@ -25,12 +24,12 @@ class SentimentAnalyzer:
     #     testimonial = TextBlob(text)
     #     sentiment_polarity = testimonial.sentiment.polarity
     #     sentiment_subjectivity = testimonial.sentiment.subjectivity
-    #
+    # 
     #     if sentiment_polarity > 0:
     #         sentiment = "Positive"
     #     elif sentiment_polarity < 0:
     #         sentiment = "Negative"
     #     else:
     #         sentiment = "Neutral"
-    #
+    # 
     #     return sentiment, sentiment_polarity
