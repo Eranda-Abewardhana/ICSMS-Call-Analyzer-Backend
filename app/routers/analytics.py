@@ -1,8 +1,8 @@
 from fastapi import APIRouter
 
 from app.database.db import DatabaseConnector
-from app.models.analytics_record import AnalyticsRecord
 from app.models.action_result import ActionResult
+from app.models.analytics_record import AnalyticsRecord
 
 analytics_router = APIRouter()
 
@@ -30,6 +30,12 @@ async def get_analytics_record_by_id(analytics_id: str):
 @analytics_router.delete("/delete-analytics/{analytics_id}", response_model=ActionResult)
 async def delete_analytics_record(analytics_id: str):
     action_result = await db.delete_entity(analytics_id)
+    return action_result
+
+
+@analytics_router.put("/get-call-summary/{call_id}", response_model=ActionResult)
+async def get_call_summary(call_id: str):
+    action_result = await db.find_entity({"call_id": call_id}, {"summary": 1, "_id": 0})
     return action_result
 
 

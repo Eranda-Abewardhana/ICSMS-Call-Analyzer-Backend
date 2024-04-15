@@ -2,6 +2,7 @@
 /app/data
 /venv
 /env
+/myvenv
 
 .idea
 /__pycache__
