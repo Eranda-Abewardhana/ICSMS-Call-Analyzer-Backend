@@ -1,5 +1,7 @@
 import os
 import shutil
+
+from bson import ObjectId
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.constants import TextMessages
@@ -55,7 +57,7 @@ async def get_calls_list():
     call_list = []
     for call_record in call_collection:
         call_list_item = call_record
-        call_sentiment_data = await analytics_db.find_entity({"call_id": call_list_item["_id"]}, {"sentiment_category": 1, "_id": 0})
+        call_sentiment_data = await analytics_db.find_entity({"call_id": call_list_item["_id"]["$oid"]}, {"sentiment_category": 1, "_id": 0})
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
         call_list.append(call_list_item)
