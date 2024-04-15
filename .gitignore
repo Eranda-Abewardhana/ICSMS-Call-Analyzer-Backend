@@ -7,3 +7,4 @@
 .idea
 /__pycache__
 /app/database/.env
+*__pycache__

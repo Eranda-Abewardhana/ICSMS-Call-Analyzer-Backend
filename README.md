@@ -26,5 +26,11 @@
 ``pip intall -r requirements.txt``
 <br/>
 <br/>
-7. Run Server<br/>
+7. Install FFMPEG<br/>
+``winget install "FFmpeg (Essentials Build)"``
+<br/>
+<br/>
+8. Run Server<br/>
 ``python main.py``
+
+<!-- https://stackoverflow.com/questions/68505216/modulenotfounderror-no-module-named-app-routes -->
