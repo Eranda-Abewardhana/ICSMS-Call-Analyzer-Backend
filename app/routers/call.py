@@ -122,7 +122,7 @@ async def upload_file(file: UploadFile = File(...)):
                 # sentiment_score = sentiment_analyzer.analyze_sentiment(transcription)
                 # print('Sentiment Score ' + sentiment_score)
 
-                analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
+                analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment, call_date=call_datetime,
                                                   keywords=keywords, summary=summary, sentiment_score=0.4)
 
                 await analytics_db.add_entity(analyzer_record)
