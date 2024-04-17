@@ -1,7 +1,6 @@
 import os
 import shutil
 from datetime import datetime
-from bson import ObjectId
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.constants import TextMessages
