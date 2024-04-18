@@ -138,3 +138,14 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+
+    async def run_aggregation(self, pipeline: list) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            result = await self.__collection.aggregate(pipeline).to_list(None)
+            action_result.data = result
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result

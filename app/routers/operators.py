@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_operator import CallOperator
-
+from app.database.aggregation import get_next_operator_id_pipeline
 operator_router = APIRouter()
 
 db = DatabaseConnector("operators")
@@ -21,9 +21,16 @@ async def get_operator(operator_id: str):
     return action_result
 
 
+@operator_router.get('/get-operator-id', response_model=ActionResult)
+async def get_next_operator_id():
+    action_result = await db.run_aggregation(get_next_operator_id_pipeline)
+    return action_result
+
+
 @operator_router.post('/add-operator', response_model=ActionResult)
 async def add_operator(operator: CallOperator):
     action_result = await db.add_entity(operator)
+    action_result.data = str(action_result.data)
     return action_result
 
 
