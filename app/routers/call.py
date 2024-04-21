@@ -99,14 +99,16 @@ async def upload_file(file: UploadFile = File(...)):
                 masked_transcription = masking_analyzer.mask_text(transcription)
                 print('Masked Data ' + masked_transcription)
 
-                call_date = filename.split('_')[0]
-                call_time = filename.split('_')[1]
+                operator_id = int(filename.split("_")[0])
+                call_date = filename.split('_')[1]
+                call_time = filename.split('_')[2]
 
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
                 call_record = CallRecord(description=filename, transcription=masked_transcription,
                                          call_duration=0,
                                          call_date=call_datetime,
+                                         operator_id = operator_id,
                                          call_recording_url="https://call-analytics-bucket.s3.ap-south-1.amazonaws.com/mr%20john_20240403_183000_mr%20john.mp3?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEAgaCmV1LW5vcnRoLTEiRzBFAiA7IwmgpjZGnDy9KC9RMIvqHyRDg7iLE0j2PAdchUyfXAIhAK5R92ZaI%2Bm%2BVCyegbLmjnJ0%2BhU0zbsw6pxCowI8eNStKv0CCEEQARoMNjIwNzQ5OTAwMDY2Igz3cfpSmCJ%2BrkoJXkEq2gIDbWVmUiuwJ68ZoFS%2F%2B5vJskn6w4d2Eq%2F3YFM7td2MUGzmGGUc5evLna04e1Yov5FHX8sIN9gN0PWFxyzyceXF33qKl6AdHZwrCp2Jtx%2BCP7BbCGNbKzkRMKTYF8%2FGGrgG21mO2EQdqDCCX83SBHZZ%2BMdxRPswSd26Th%2FTU2zpI0vjRWFeClDDrFv9lbDeTDkOAMDlnhU8%2BguAAqYrYM0u7jqTyQaXVjg6Kq1TeTJjHPaDT9ynwWNcJFSM9WGBc6YY7kKL25VzBlrVjmtxpr1vsFSoxLlUuw8ub4oSlBULbNRcWPW2NxYQuqP5Vqaab%2BCIp34Ylj0M9%2FlBTkiqL1R4Nwib1gDjKd8YJL9oyGujcg7xMezeEdDdrpfpAyGJoytFNLdKbJFbcA3xjhSjmYuHvYu6qH23Zi8ded3pxB%2BbDVLlxg%2FVQuRbcC628XUc0aY9EfURPGNFgTpZMOuy3rAGOrMCwDNBxwGtCLypG3gLVxIz91KDo78WkwDDBpi6rpu%2FSgVjt62qrXhDu2FHaF8FNp5gQ4wH5L29B9vN6yirPIT8x4fZfr%2FfeDvGq%2Ff%2Bg1nJRkBoZCZVQ3isxlEFvSzfkGnTZgdoHxLePGb1%2F3HZB719ZYi47gXmQ7y%2BpDYUnsb1arUxyORPwmG%2BlNzWoEONl%2BzbyteTdqc9iacsycrY40oDzso6RzK5L777XE%2Bkc8DyEhf1CHDJ4T3f15CYErgHOziT1SG%2FrSBOcdcnUoSvPgVqOnJRrlYxsZSByWLkBrHpSWHHUAxzz61LgtpQeahvhkknUK%2BwhI9QITKG3YSfCUxAmYhAJXf%2FFaRHMxdIIKnlqaxAbOyDoqpR5kT%2BpGWVMO4%2BR40dFbFIF38MO3GUQ7ZRdbxC5Q%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240411T143459Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Credential=ASIAZBB4TZERPGMLYVP4%2F20240411%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Signature=5cf1b80d4dfa8faba0c13aa052e3dd99cdd8e6b7cb6dc02cb9954ecfdbe417e2")
                 result = await db.add_entity(call_record)
 

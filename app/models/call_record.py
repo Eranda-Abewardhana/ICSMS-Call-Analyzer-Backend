@@ -14,6 +14,7 @@ class CallRecord(BaseModel):
     call_recording_url: str = Field(...)
     call_duration: int = Field(...)
     call_date: datetime = Field(...)
+    operator_id: int = Field(...)
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True
