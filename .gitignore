@@ -8,3 +8,4 @@
 /__pycache__
 /app/database/.env
 *__pycache__
+.env

@@ -1,21 +1,21 @@
 import os
 import shutil
 from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
+from app.config.config import Configurations
 from app.config.constants import TextMessages
 from app.database.db import DatabaseConnector
+from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
-from app.models.action_result import ActionResult
-from app.models.s3_request import S3Request
 from app.utils.data_masking import DataMasker
 from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.transcriber import Transcriber
-from app.config.config import Configurations
 
 call_router = APIRouter()
 
@@ -33,21 +33,6 @@ keyword_extractor = KeywordExtractor()
 async def get_call_record_by_id(call_id: str):
     action_result = await db.get_entity_by_id(call_id)
     return action_result
-
-
-@call_router.post("/update-call-url", response_model=ActionResult)
-async def update_call_url(s3_request: S3Request):
-    action_result = ActionResult(status=True)
-    try:
-        existing_record = await db.get_entity_by_id(s3_request.call_id)
-        if existing_record:
-            existing_record.call_recording_url = s3_request.call_recording_url
-            result = await existing_record.update_entity(existing_record)
-            return result
-        else:
-            raise HTTPException(status_code=404, detail="Record not found.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error.")
 
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
@@ -125,29 +110,26 @@ async def upload_file(file: UploadFile = File(...)):
                                          call_duration=0,
                                          call_date=call_datetime,
                                          operator_id=operator_id,
-                                         call_recording_url="")
+                                         call_recording_url="https://call-analytics-bucket.s3.ap-south-1.amazonaws.com/mr%20john_20240403_183000_mr%20john.mp3?response-content-disposition=inline&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEAgaCmV1LW5vcnRoLTEiRzBFAiA7IwmgpjZGnDy9KC9RMIvqHyRDg7iLE0j2PAdchUyfXAIhAK5R92ZaI%2Bm%2BVCyegbLmjnJ0%2BhU0zbsw6pxCowI8eNStKv0CCEEQARoMNjIwNzQ5OTAwMDY2Igz3cfpSmCJ%2BrkoJXkEq2gIDbWVmUiuwJ68ZoFS%2F%2B5vJskn6w4d2Eq%2F3YFM7td2MUGzmGGUc5evLna04e1Yov5FHX8sIN9gN0PWFxyzyceXF33qKl6AdHZwrCp2Jtx%2BCP7BbCGNbKzkRMKTYF8%2FGGrgG21mO2EQdqDCCX83SBHZZ%2BMdxRPswSd26Th%2FTU2zpI0vjRWFeClDDrFv9lbDeTDkOAMDlnhU8%2BguAAqYrYM0u7jqTyQaXVjg6Kq1TeTJjHPaDT9ynwWNcJFSM9WGBc6YY7kKL25VzBlrVjmtxpr1vsFSoxLlUuw8ub4oSlBULbNRcWPW2NxYQuqP5Vqaab%2BCIp34Ylj0M9%2FlBTkiqL1R4Nwib1gDjKd8YJL9oyGujcg7xMezeEdDdrpfpAyGJoytFNLdKbJFbcA3xjhSjmYuHvYu6qH23Zi8ded3pxB%2BbDVLlxg%2FVQuRbcC628XUc0aY9EfURPGNFgTpZMOuy3rAGOrMCwDNBxwGtCLypG3gLVxIz91KDo78WkwDDBpi6rpu%2FSgVjt62qrXhDu2FHaF8FNp5gQ4wH5L29B9vN6yirPIT8x4fZfr%2FfeDvGq%2Ff%2Bg1nJRkBoZCZVQ3isxlEFvSzfkGnTZgdoHxLePGb1%2F3HZB719ZYi47gXmQ7y%2BpDYUnsb1arUxyORPwmG%2BlNzWoEONl%2BzbyteTdqc9iacsycrY40oDzso6RzK5L777XE%2Bkc8DyEhf1CHDJ4T3f15CYErgHOziT1SG%2FrSBOcdcnUoSvPgVqOnJRrlYxsZSByWLkBrHpSWHHUAxzz61LgtpQeahvhkknUK%2BwhI9QITKG3YSfCUxAmYhAJXf%2FFaRHMxdIIKnlqaxAbOyDoqpR5kT%2BpGWVMO4%2BR40dFbFIF38MO3GUQ7ZRdbxC5Q%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20240411T143459Z&X-Amz-SignedHeaders=host&X-Amz-Expires=43200&X-Amz-Credential=ASIAZBB4TZERPGMLYVP4%2F20240411%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Signature=5cf1b80d4dfa8faba0c13aa052e3dd99cdd8e6b7cb6dc02cb9954ecfdbe417e2")
                 result = await db.add_entity(call_record)
 
                 summary = summary_analyzer.generate_summary(masked_transcription)
                 print('Summary Data ' + summary)
 
                 sentiment = sentiment_analyzer.analyze(transcription, Configurations.sentiment_categories)
+                sentiment_score = sentiment_analyzer.get_sentiment_score()
                 print('Sentiment Data ' + sentiment)
 
                 keywords = keyword_extractor.extract_keywords(masked_transcription)
 
-                # sentiment_score = sentiment_analyzer.analyze_sentiment(transcription)
-                # print('Sentiment Score ' + sentiment_score)
-
                 analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
                                                   call_date=call_datetime,
-                                                  keywords=keywords, summary=summary, sentiment_score=0.4)
+                                                  keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
                 await analytics_db.add_entity(analyzer_record)
 
-                await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                                   Configurations.aws_access_key_id,
-                                   Configurations.aws_secret_access_key)
+                await upload_to_s3(filepath, Configurations.bucket_name, filename, Configurations.aws_s3_access_key_id,
+                                   Configurations.aws_s3_secret_access_key)
 
                 # Remove the file after processing
                 os.remove(file_location)
