@@ -96,6 +96,8 @@ class DatabaseConnector:
             entity = await self.__collection.find_one({"_id": ObjectId(entity_id)})
             if entity is None:
                 action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+
             else:
                 json_data = json.loads(json_util.dumps(entity))
                 action_result.data = json_data
