@@ -1,6 +1,5 @@
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
-
 import aiofiles
 import boto3
 
@@ -21,7 +20,7 @@ async def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, a
                 return s3_client.put_object(
                     Bucket=bucket_name,
                     Key=object_name,
-                    Body=data
+                    Body=data,
                 )
 
             # Use ThreadPoolExecutor to run the synchronous S3 operation
