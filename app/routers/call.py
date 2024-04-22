@@ -83,6 +83,7 @@ async def get_calls_list():
         call_list_item["id"] = call_list_item["_id"]["$oid"]
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
         call_date_time: str = call_record["call_date"]["$date"]
+        call_list_item["call_recording_url"]: str = call_list_item["call_recording_url"]
         cal_date, call_time = call_date_time.split("T")
         call_time = call_time[:-1]
         cale_datetime_string = f'{cal_date} {call_time}'
