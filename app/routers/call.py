@@ -12,6 +12,7 @@ from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
 from app.models.s3_request import S3Request
 from app.utils.data_masking import DataMasker
+from app.utils.helpers import get_audio_duration
 from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
@@ -126,7 +127,7 @@ async def upload_file(file: UploadFile = File(...)):
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
                 call_record = CallRecord(description=filename, transcription=masked_transcription,
-                                         call_duration=0,
+                                         call_duration=get_audio_duration(filepath),
                                          call_date=call_datetime,
                                          operator_id=operator_id,
                                          call_recording_url="")
