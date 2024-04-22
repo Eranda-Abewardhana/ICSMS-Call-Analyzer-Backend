@@ -36,29 +36,22 @@ async def get_call_record_by_id(call_id: str):
     return action_result
 
 
-@call_router.post("/update-call-url", response_model=ActionResult)
+@call_router.put("/update-call-url", response_model=ActionResult)
 async def update_call_url(s3_request: S3Request):
-
-    try:
-        existing_record = await db.get_entity_by_id(s3_request.call_id)
-        if existing_record.status:
-
-            existing_record_data = {
-                "_id": existing_record.data['_id']['$oid'],
-                "description": existing_record.data['description'],
-                "transcription": existing_record.data['transcription'],
-                "call_recording_url": s3_request.call_url,
-                "call_duration": existing_record.data['call_duration'],
-                "call_date": datetime.strptime(existing_record.data['call_date']['$date'], '%Y-%m-%dT%H:%M:%SZ'),
-                "operator_id": existing_record.data['operator_id'],
-            }
-            record = CallRecord(**existing_record_data)
-            result = await db.update_entity(record)
-            return result
-        else:
-            raise HTTPException(status_code=404, detail="Record not found.")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error.")
+    action_result = await db.get_entity_by_id(s3_request.call_id)
+    if action_result.status:
+        existing_record = action_result.data
+        existing_call_record: CallRecord = CallRecord(_id=s3_request.call_id,
+                                                      description=existing_record["description"],
+                                                      transcription=existing_record['transcription'],
+                                                      call_recording_url=s3_request.call_url,
+                                                      call_duration=existing_record['call_duration'],
+                                                      call_date=datetime.strptime(existing_record['call_date']['$date'],
+                                                                                  '%Y-%m-%dT%H:%M:%SZ'),
+                                                      operator_id=existing_record['operator_id'])
+        result = await db.update_entity(existing_call_record)
+        return result
+    return action_result
 
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
@@ -146,15 +139,16 @@ async def upload_file(file: UploadFile = File(...)):
                 sentiment_score = sentiment_analyzer.get_sentiment_score()
                 print('Sentiment Data ' + sentiment)
 
-                # keywords = keyword_extractor.extract_keywords(masked_transcription)
+                keywords = keyword_extractor.extract_keywords(masked_transcription)
 
                 analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
                                                   call_date=call_datetime,
-                                                  keywords=[], summary=summary, sentiment_score=sentiment_score)
+                                                  keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
                 await analytics_db.add_entity(analyzer_record)
 
-                await upload_to_s3(filepath, Configurations.bucket_name, filename+"call_record_id"+str(result.data), Configurations.aws_s3_access_key_id,
+                await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
+                                   Configurations.aws_s3_access_key_id,
                                    Configurations.aws_s3_secret_access_key)
 
                 # Remove the file after processing
