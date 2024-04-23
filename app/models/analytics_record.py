@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Optional, List
 
 from pydantic import BaseModel, Field, ConfigDict
@@ -14,6 +15,7 @@ class AnalyticsRecord(BaseModel):
     keywords: List[str] = Field(...)
     summary: str = Field(...)
     sentiment_score: float = Field(...)
+    call_date: datetime = Field(...)
     model_config = ConfigDict(
         populate_by_name=True,
         arbitrary_types_allowed=True

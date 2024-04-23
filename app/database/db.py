@@ -5,6 +5,7 @@ from pymongo import ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError
 from bson import json_util
 import json
+import os
 
 from app.config.constants import TextMessages
 from app.models.action_result import ActionResult
@@ -12,7 +13,7 @@ from app.models.action_result import ActionResult
 
 class DatabaseConnector:
     def __init__(self, collection_name: str):
-        self.__connection_string = "mongodb+srv://erandaabewardhana:19765320@cluster0.7coezqv.mongodb.net/users?retryWrites=true&w=majority"
+        self.__connection_string = os.getenv("MONGO_DB_URL")
         self.__database_name = "call_recordings"
         self.__client = motor.motor_asyncio.AsyncIOMotorClient(self.__connection_string)
         try:
@@ -95,6 +96,8 @@ class DatabaseConnector:
             entity = await self.__collection.find_one({"_id": ObjectId(entity_id)})
             if entity is None:
                 action_result.message = TextMessages.NOT_FOUND
+                action_result.status = False
+
             else:
                 json_data = json.loads(json_util.dumps(entity))
                 action_result.data = json_data
@@ -133,6 +136,17 @@ class DatabaseConnector:
                 json_doc = json.loads(json_util.dumps(document))
                 documents.append(json_doc)
             action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
+    async def run_aggregation(self, pipeline: list) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            result = await self.__collection.aggregate(pipeline).to_list(None)
+            action_result.data = result
         except Exception as e:
             action_result.status = False
             action_result.message = TextMessages.ACTION_FAILED
