@@ -149,8 +149,8 @@ async def upload_file(file: UploadFile = File(...)):
                 await analytics_db.add_entity(analyzer_record)
 
                 await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                                   Configurations.aws_s3_access_key_id,
-                                   Configurations.aws_s3_secret_access_key)
+                                   Configurations.aws_access_key_id,
+                                   Configurations.aws_secret_access_key)
 
                 # Remove the file after processing
                 os.remove(file_location)

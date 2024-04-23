@@ -57,8 +57,8 @@ class SentimentAnalyzer:
 
     def get_sentiment_score(self) -> float:
         try:
-            comprehend = boto3.client(service_name='comprehend', aws_access_key_id=Configurations.aws_comprehend_access_key_id,
-                                      aws_secret_access_key=Configurations.aws_comprehend_secret_access_key,
+            comprehend = boto3.client(service_name='comprehend', aws_access_key_id=Configurations.aws_access_key_id,
+                                      aws_secret_access_key=Configurations.aws_secret_access_key,
                                       region_name=Configurations.aws_region)
             response = comprehend.detect_sentiment(Text=self.__text_to_analyze, LanguageCode='en')
             sentiment = response.get('SentimentScore')
