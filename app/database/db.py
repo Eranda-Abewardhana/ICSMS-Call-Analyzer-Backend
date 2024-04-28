@@ -152,3 +152,28 @@ class DatabaseConnector:
             action_result.message = TextMessages.ACTION_FAILED
         finally:
             return action_result
+
+    async def find_entities(self, filter_query: dict, fields=None) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            if fields is None:
+                cursor = self.__collection.find(filter_query)
+            else:
+                cursor = self.__collection.find(filter_query, fields)
+
+            data = []
+
+            for doc in await cursor.to_list(None):
+                data.append(doc)
+
+            if len(data) == 0:
+                action_result.message = TextMessages.NOT_FOUND
+            else:
+                json_data = json.loads(json_util.dumps(cursor))
+                action_result.data = json_data
+                action_result.message = TextMessages.FOUND
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
