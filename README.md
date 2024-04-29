@@ -32,5 +32,10 @@
 <br/>
 8. Run Server<br/>
 ``python main.py``
+<br/>
+<br/>
+9. Run Docker Container (Optional)<br/>
+``docker build . -t call-analyzer-api ``
+``docker run -p 8000:8000 --env-file .env call-analyzer-api``
 
 <!-- https://stackoverflow.com/questions/68505216/modulenotfounderror-no-module-named-app-routes -->
