@@ -2,27 +2,21 @@ from fastapi import APIRouter, UploadFile, File, Query, HTTPException
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from datetime import datetime
-from app.models.analytics_record import AnalyticsRecord
+from app.models.call_filtering import CallFilter
 
 filter_router = APIRouter()
 db = DatabaseConnector("call")
 analytics_db = DatabaseConnector("analytics")
 
 
-@filter_router.get("/filter-calls/")
-async def read_items(
-        start_date: str = Query(None, description="Start date for filtering"),
-        end_date: str = Query(None, description="End date for filtering"),
-        keyword: str = Query(None, description="Keyword for filtering"),
-        duration: int = Query(None, description="Duration for filtering"),
-        sentiment_category: str = Query(None, description="Sentiment category for filtering"),
-):
-    # Create an empty dictionary to hold filter query parameters
+@filter_router.post("/filter-calls", response_model=ActionResult)
+async def read_items(call_filtering: CallFilter):
+    action_result = ActionResult(status=True)
     filter_query_analytics = {}
     filter_query_calls = {}
     # Define the parameters as a list
-    params_analytics = [keyword, sentiment_category]
-    params_calls = [start_date, end_date, duration]
+    params_analytics = [call_filtering.keyword, call_filtering.sentiment_category]
+    params_calls = [call_filtering.start_date, call_filtering.end_date, call_filtering.duration]
     # Loop through the parameters and add non-None ones to the filter_query dictionary
     for param_name, param_value in zip(["keyword", "sentiment_category"], params_analytics):
         if param_value is not None:
@@ -64,6 +58,3 @@ async def read_items(
 
         # Return the merged list
         return merged_list
-
-
-
