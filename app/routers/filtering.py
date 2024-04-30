@@ -15,15 +15,20 @@ async def read_items(call_filtering: CallFilter):
     filter_query_analytics = {}
     filter_query_calls = {}
     # Define the parameters as a list
-    params_analytics = [call_filtering.keyword, call_filtering.sentiment_category, call_filtering.topics]
+    params_analytics = [call_filtering.keywords, call_filtering.sentiment_category, call_filtering.topics]
     params_calls = [call_filtering.start_date, call_filtering.end_date, call_filtering.duration]
     # Loop through the parameters and add non-None ones to the filter_query dictionary
-    for param_name, param_value in zip(["keyword", "sentiment_category", "topics"], params_analytics):
+    for param_name, param_value in zip(["keywords", "sentiment_category", "topics"], params_analytics):
         if param_value is not None:
             filter_query_analytics[param_name] = param_value
     for param_name, param_value in zip(["start_date", "end_date", "duration"], params_calls):
         if param_value is not None:
-            filter_query_calls[param_name] = param_value
+            if param_name in ["start_date", "end_date"]:
+                # Assuming call_date is a datetime field in your data model
+                filter_query_calls["call_date"] = {"$gte": param_value} if param_name == "start_date" else {
+                    "$lte": param_value}
+            else:
+                filter_query_calls[param_name] = param_value
 
     # Return the filter_query dictionary
     result_analytics = await analytics_db.find_entities(filter_query_analytics)
@@ -36,8 +41,8 @@ async def read_items(call_filtering: CallFilter):
     elif not params_calls:
         common_matches_list = result_analytics
     else:
-        matching_ids = [call_record.get("id") for call_record in result_calls]
-        matching_call_ids = [analytics_record.get("call_id") for analytics_record in result_analytics]
+        matching_ids = [call_record.get("id") for call_record in result_calls.data]
+        matching_call_ids = [analytics_record.get("call_id") for analytics_record in result_analytics.data]
         common_matches = set(matching_ids) & set(matching_call_ids)
         common_matches_list = list(common_matches)
 
