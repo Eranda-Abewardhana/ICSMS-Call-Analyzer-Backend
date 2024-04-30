@@ -15,10 +15,10 @@ async def read_items(call_filtering: CallFilter):
     filter_query_analytics = {}
     filter_query_calls = {}
     # Define the parameters as a list
-    params_analytics = [call_filtering.keyword, call_filtering.sentiment_category]
+    params_analytics = [call_filtering.keyword, call_filtering.sentiment_category, call_filtering.topics]
     params_calls = [call_filtering.start_date, call_filtering.end_date, call_filtering.duration]
     # Loop through the parameters and add non-None ones to the filter_query dictionary
-    for param_name, param_value in zip(["keyword", "sentiment_category"], params_analytics):
+    for param_name, param_value in zip(["keyword", "sentiment_category", "topics"], params_analytics):
         if param_value is not None:
             filter_query_analytics[param_name] = param_value
     for param_name, param_value in zip(["start_date", "end_date", "duration"], params_calls):
@@ -57,4 +57,4 @@ async def read_items(call_filtering: CallFilter):
                 merged_list.append(merged_record)
 
         # Return the merged list
-        return merged_list
+        return ActionResult(data=merged_list)
