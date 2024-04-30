@@ -5,11 +5,13 @@ from app.database.aggregation import call_statistics_pipeline, sentiment_percent
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
+from app.utils.helpers import merge_operator_analytics_over_time
 
 analytics_router = APIRouter()
 
 analytics_db = DatabaseConnector("analytics")
 calls_db = DatabaseConnector("calls")
+operator_db = DatabaseConnector("operators")
 
 
 @analytics_router.post("/add-analytics", response_model=ActionResult)
@@ -64,5 +66,21 @@ async def get_sentiment_percentages():
 
 @analytics_router.get("/get-operator-calls-over-time", response_model=ActionResult)
 async def get_operator_calls_over_time():
-    action_result = await analytics_db.run_aggregation(operator_calls_over_time_pipeline)
+    pipeline_result = await calls_db.run_aggregation(operator_calls_over_time_pipeline)
+    operator_result = await operator_db.get_all_entities()
+
+    action_result = ActionResult(error_message=[], status=True)
+
+    if not operator_result.status:
+        action_result.status = False
+        action_result.error_message.append("Failed to call operator data")
+
+    if not pipeline_result.status:
+        action_result.status = False
+        action_result.error_message.append("Failed to analytics data")
+
+    if action_result.status:
+        processed_entities = merge_operator_analytics_over_time(operator_result.data, pipeline_result.data)
+        action_result.data = processed_entities
+
     return action_result

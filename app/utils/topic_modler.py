@@ -12,7 +12,7 @@ class TopicModeler:
         self.__output_parser = StrOutputParser()
         self.__template = ("Use this telephone call transcription {transcript} to detect the customer who is calling and the call "
                     "operator who is handling the call. then identify the topic of the call and categorize the "
-                    "call into one of these topics. {topics} only output should be the topic")
+                    "call into suiltable from these topics. {topics} only output should be the topic")
 
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["transcript", "topics"])
 

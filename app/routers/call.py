@@ -17,6 +17,7 @@ from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
+from app.utils.topic_modler import TopicModeler
 from app.utils.transcriber import Transcriber
 
 call_router = APIRouter()
@@ -29,7 +30,7 @@ masking_analyzer = DataMasker()
 sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
 keyword_extractor = KeywordExtractor()
-
+topic_modeler = TopicModeler()
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
 async def get_call_record_by_id(call_id: str):
@@ -142,6 +143,7 @@ async def upload_file(file: UploadFile = File(...)):
                 print('Sentiment Data ' + sentiment)
 
                 keywords = keyword_extractor.extract_keywords(masked_transcription)
+                topics = topic_modeler.categorize(masked_transcription, Configurations.topics)
 
                 analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
                                                   call_date=call_datetime,
