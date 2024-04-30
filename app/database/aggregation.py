@@ -137,6 +137,37 @@ call_statistics_pipeline = [
     }
 ]
 
+get_all_keywords_pipeline = [
+    {
+        '$project': {
+            'keywords': 1,
+            '_id': 0
+        }
+    }, {
+        '$group': {
+            '_id': None,
+            'keywords': {
+                '$push': '$keywords'
+            }
+        }
+    }, {
+        '$project': {
+            '_id': 0,
+            'keywords': {
+                '$reduce': {
+                    'input': '$keywords',
+                    'initialValue': [],
+                    'in': {
+                        '$concatArrays': [
+                            '$$value', '$$this'
+                        ]
+                    }
+                }
+            }
+        }
+    }
+]
+
 sentiment_percentages_pipeline = [
     {
         '$group': {
