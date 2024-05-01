@@ -14,4 +14,4 @@ class Configurations:
     bucket_name = os.getenv("BUCKET_NAME")
     mongo_db_url = os.getenv("MONGO_DB_URL")
     aws_region = os.getenv("AWS_DEFAULT_REGION")
-    topics = [""]
+    topics = ["Sales", "Payments", "Customer Inquiries", "Technical Support", "Order Tracking"]

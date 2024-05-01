@@ -84,3 +84,9 @@ async def get_operator_calls_over_time():
         action_result.data = processed_entities
 
     return action_result
+
+
+@analytics_router.get("/get-topics-distribution", response_model=ActionResult)
+async def get_topics_distribution():
+    action_result = analytics_db.run_aggregation()
+    return action_result

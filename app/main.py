@@ -10,7 +10,6 @@ from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
 
-
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Configurations.SAVED_FOLDER, exist_ok=True)
 

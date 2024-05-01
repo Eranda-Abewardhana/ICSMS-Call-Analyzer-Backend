@@ -12,12 +12,12 @@ class TopicModeler:
         self.__output_parser = StrOutputParser()
         self.__template = ("Use this telephone call transcription {transcript} to detect the customer who is calling and the call "
                     "operator who is handling the call. then identify the topic of the call and categorize the "
-                    "call into suiltable from these topics. {topics} only output should be the topic")
+                    "call into suiltable from these topics. {topics} only output should be the topics, separated by comma")
 
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["transcript", "topics"])
 
-    def categorize(self, call_transcription: str, call_topics: list[str]) -> str:
+    def categorize(self, call_transcription: str, call_topics: list[str]) -> list[str]:
         chain = self.__prompt_template | self.__model | self.__output_parser
         topic = chain.invoke({"transcript": call_transcription, "topics": call_topics})
-        return topic
+        return topic.split(',')
 
