@@ -6,7 +6,7 @@ EXPOSE 8000
 
 COPY ./requirements.txt /code/requirements.txt
 
-RUN pip --timeout=1000 install --no-cache-dir --upgrade -r /code/requirements.txt
+RUN pip --timeout=1000 install --no-cache-dir -r /code/requirements.txt
 
 COPY ./app /code/app
 
