@@ -1,7 +1,11 @@
-/mp3
-/data
+/app/mp3
+/app/data
 /venv
 /env
+/myvenv
 
-/.idea
+.idea
 /__pycache__
+/app/database/.env
+*__pycache__
+.env

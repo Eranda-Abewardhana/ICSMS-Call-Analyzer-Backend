@@ -1,7 +1,5 @@
-import requests as r
 import os
 from pydub import AudioSegment
-import time
 
 # Directory where the MP3 files are saved
 source_directory = "F:\\Call Recordings\\"
