@@ -17,6 +17,7 @@ from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
+from app.utils.topic_modler import TopicModeler
 from app.utils.transcriber import Transcriber
 
 call_router = APIRouter()
@@ -29,6 +30,7 @@ masking_analyzer = DataMasker()
 sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
 keyword_extractor = KeywordExtractor()
+topic_modeler = TopicModeler()
 
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
@@ -124,10 +126,12 @@ async def upload_file(file: UploadFile = File(...)):
                 operator_id = int(filename.split("_")[0])
                 call_date = filename.split('_')[1]
                 call_time = filename.split('_')[2]
+                filename_text = filename.split('.')[0]
+                call_description = "_".join(filename_text.split("_")[3:])
 
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
-                call_record = CallRecord(description=filename, transcription=masked_transcription,
+                call_record = CallRecord(description=call_description, transcription=masked_transcription,
                                          call_duration=get_audio_duration(filepath),
                                          call_date=call_datetime,
                                          operator_id=operator_id,
@@ -142,9 +146,10 @@ async def upload_file(file: UploadFile = File(...)):
                 print('Sentiment Data ' + sentiment)
 
                 keywords = keyword_extractor.extract_keywords(masked_transcription)
+                topics = topic_modeler.categorize(masked_transcription, Configurations.topics)
 
                 analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
-                                                  call_date=call_datetime,
+                                                  call_date=call_datetime, topics=topics,
                                                   keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
                 await analytics_db.add_entity(analyzer_record)

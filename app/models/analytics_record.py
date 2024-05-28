@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional
 
 from pydantic import BaseModel, Field, ConfigDict
 from pydantic.functional_validators import BeforeValidator
@@ -12,7 +12,8 @@ class AnalyticsRecord(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     call_id: str = Field(...)
     sentiment_category: str = Field(...)
-    keywords: List[str] = Field(...)
+    keywords: list[str] = Field(...)
+    topics: list[str] = Field(...)
     summary: str = Field(...)
     sentiment_score: float = Field(...)
     call_date: datetime = Field(...)
