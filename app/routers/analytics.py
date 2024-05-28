@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from collections import Counter
 from app.database.aggregation import call_statistics_pipeline, sentiment_percentages_pipeline, \
-    operator_calls_over_time_pipeline, get_all_keywords_pipeline
+    operator_calls_over_time_pipeline, get_all_keywords_pipeline, operator_rating_pipeline
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
@@ -98,4 +98,11 @@ async def get_all_keywords():
     action_result.data = action_result.data[0]
     keywords_counter = Counter(action_result.data["keywords"])
     action_result.data = keywords_counter
+    return action_result
+
+
+@analytics_router.get("/get_operator_ratings", response_model=ActionResult)
+async def get_operator_ratings():
+    action_result = await calls_db.run_aggregation(operator_rating_pipeline(3))
+    action_result.data = action_result.data
     return action_result

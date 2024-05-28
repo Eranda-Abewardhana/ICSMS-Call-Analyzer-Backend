@@ -12,7 +12,7 @@ from app.routers.call import call_router
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Configurations.SAVED_FOLDER, exist_ok=True)
 
-app = FastAPI()
+app = FastAPI(title="iCSMS Call Analyzer REST API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -22,10 +22,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(call_router)
-app.include_router(analytics_router)
-app.include_router(settings_router)
-app.include_router(operator_router)
+app.include_router(call_router, tags=["Call Recordings"])
+app.include_router(analytics_router, tags=["Call Analytics"])
+app.include_router(settings_router, tags=["Call Settings"])
+app.include_router(operator_router, tags=["Call Operators"])
 
 if __name__ == '__main__':
     uvicorn.run(app, port=8080)
