@@ -24,6 +24,7 @@ class NotificatioSettings(BaseModel):
     
 class NotificatioDirSettings(BaseModel):
     id: str = Field(alias="_id", default='')
+    user_id: str = Field(...)
     dir: str = Field(...)
     model_config = ConfigDict(
         populate_by_name=True,

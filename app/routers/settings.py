@@ -19,12 +19,18 @@ async def get_notification_settings(userID: str):
 
 @settings_router.post("/update-notification-settings", response_model=ActionResult)
 async def update_notification_settings(settings: NotificatioSettings):
-    print(settings.dict())
+    querry_id = await db.find_entity({"user_id": settings.user_id})
+    settings.id = querry_id.data["_id"]['$oid']
+    print(settings.id)
     action_result = await db.update_entity(settings)
     return action_result
 
 @settings_router.post("/update-dir-settings", response_model=ActionResult)
-async def update_notification_settings(settings: NotificatioDirSettings):
+async def update_dir_settings(settings: NotificatioDirSettings):
     print(settings.dict())
+    # print(settings)
+    querry_id = await db.find_entity({"user_id": settings.user_id})
+    settings.id = querry_id.data["_id"]['$oid']
+    print(settings.id)
     action_result = await db.update_entity(settings)
     return action_result
