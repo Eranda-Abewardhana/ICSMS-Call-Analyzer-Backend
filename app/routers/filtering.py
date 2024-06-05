@@ -3,7 +3,7 @@ from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from datetime import datetime, timedelta
 from app.models.call_filtering import CallFilter
-
+import re
 
 filter_router = APIRouter()
 db = DatabaseConnector("calls")
@@ -24,16 +24,21 @@ async def read_items(call_filtering: CallFilter):
             if param_name == "sentiment_category":
                 filter_query_analytics[param_name] = param_value
             else:
-                filter_query_analytics[param_name] = param_value[0]
+                # Assuming param_name is a list
+                # Constructing regex pattern to match any substring containing each keyword
+                regex_pattern = f'({"|".join(param_value)})'
+                # Using the constructed regex pattern in the query
+                filter_query_analytics = { param_name: {"$regex": regex_pattern}}
+                # filter_query_analytics[param_name] = param_value
     for param_name, param_value in zip(["start_date", "end_date", "call_duration"], params_calls):
         if param_value not in ("", []):
             if param_name in ["start_date", "end_date"]:
                 if "call_date" not in filter_query_calls:
                     filter_query_calls["call_date"] = {}
                 if param_name == "start_date" and param_value != "":
-                    filter_query_calls["call_date"]["$gte"] = param_value
+                    filter_query_calls["call_date"]["$gte"] = datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%fZ')
                 elif param_name == "end_date" and param_value != "":
-                    filter_query_calls["call_date"]["$lte"] = param_value
+                    filter_query_calls["call_date"]["$lte"] = datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%fZ')
 
             # if param_name in ["start_date", "end_date"]:
             #     if param_name == "start_date" and param_value != "":
