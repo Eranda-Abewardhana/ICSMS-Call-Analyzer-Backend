@@ -1,6 +1,7 @@
 import os
 import shutil
 from datetime import datetime
+from typing import List
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
@@ -96,22 +97,23 @@ async def get_calls_list():
 
 
 @call_router.post("/upload-calls")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_files(files: List[UploadFile] = File(...)):
     action_result = ActionResult(status=True)
-    print("Received filename:", file.filename)
-    file_location = os.path.join(Configurations.UPLOAD_FOLDER, file.filename)
+    for file in files:
+        print("Received filename:", file.filename)
+        file_location = os.path.join(Configurations.UPLOAD_FOLDER, file.filename)
 
-    try:
-        file.file.seek(0)  # Ensure we're copying the file from the start
-        with open(file_location, "wb") as file_out:
-            shutil.copyfileobj(file.file, file_out)
-        print("File saved successfully.")
-    except Exception as e:
-        print(f"Error saving file: {e}")
-        return {"error": "Error saving the file."}
+        try:
+            file.file.seek(0)  # Ensure we're copying the file from the start
+            with open(file_location, "wb") as file_out:
+                shutil.copyfileobj(file.file, file_out)
+            print("File saved successfully.")
+        except Exception as e:
+            print(f"Error saving file: {e}")
+            return {"error": "Error saving the file."}
 
-    await file.close()
-    action_result.error_message = []
+        await file.close()
+        action_result.error_message = []
     for filename in os.listdir(Configurations.UPLOAD_FOLDER):
         filepath = os.path.join(Configurations.UPLOAD_FOLDER, filename)
 
