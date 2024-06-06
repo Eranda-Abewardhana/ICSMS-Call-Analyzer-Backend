@@ -9,5 +9,5 @@ class CallFilter(BaseModel):
     end_date: str = Field(...)
     keywords: list[str] = Field(...)
     duration: int = Field(...)
-    sentiment_category: str = Field(...)
+    sentiment_category: list[str] = Field(...)
     topics: list[str] = Field(...)
