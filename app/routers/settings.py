@@ -9,7 +9,6 @@ from app.models.notification_settings import NotificatioSettings
 settings_router = APIRouter()
 
 db = DatabaseConnector("settings")
-
 @settings_router.get("/get-notification-settings/{userID}", response_model=ActionResult)
 async def get_notification_settings(userID: str):
     action_result = await db.get_all_entities()

@@ -4,6 +4,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.config import Configurations
+from app.routers.filtering import filter_router
 from app.routers.operators import operator_router
 from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
@@ -27,6 +28,7 @@ app.include_router(call_router, tags=["Call Recordings"])
 app.include_router(analytics_router, tags=["Call Analytics"])
 app.include_router(settings_router, tags=["Call Settings"])
 app.include_router(operator_router, tags=["Call Operators"])
+app.include_router(filter_router)
 
 @app.get("/result/{task_id}")
 def get_result(task_id: str):
