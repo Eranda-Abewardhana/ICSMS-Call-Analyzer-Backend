@@ -156,24 +156,69 @@ class DatabaseConnector:
     async def find_entities(self, filter_query: dict, fields=None) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
+            # Adjusting the find() based on whether fields are specified or not
             if fields is None:
                 cursor = self.__collection.find(filter_query)
             else:
                 cursor = self.__collection.find(filter_query, fields)
 
-            data = []
+            data = await cursor.to_list(None)
 
-            for doc in await cursor.to_list(None):
-                data.append(doc)
-
-            if len(data) == 0:
+            if not data:
                 action_result.message = TextMessages.NOT_FOUND
             else:
-                json_data = json.loads(json_util.dumps(cursor))
+                json_data = json.loads(json_util.dumps(data))  # Serialize the list of documents
                 action_result.data = json_data
                 action_result.message = TextMessages.FOUND
+
         except Exception as e:
             action_result.status = False
-            action_result.message = TextMessages.ACTION_FAILED
+            action_result.message = f"{TextMessages.ACTION_FAILED}: {str(e)}"
         finally:
             return action_result
+    # async def find_entities(self, filter_query: dict, fields=None) -> ActionResult:
+    #     action_result = ActionResult(status=True)
+    #     try:
+    #         if fields is None:
+    #             cursor = self.__collection.find(filter_query)
+    #         else:
+    #             cursor = self.__collection.find(filter_query, fields)
+    #
+    #         data = await cursor.to_list(None)
+    #
+    #         if len(data) == 0:
+    #             action_result.message = TextMessages.NOT_FOUND
+    #         else:
+    #             json_data = json.loads(json_util.dumps(data))  # Serialize the list of documents
+    #             action_result.data = json_data
+    #             action_result.message = TextMessages.FOUND
+    #     except Exception as e:
+    #         action_result.status = False
+    #         action_result.message = f"{TextMessages.ACTION_FAILED}: {str(e)}"
+    #     finally:
+    #         return action_result
+
+    # async def find_entities(self, filter_query: dict, fields=None) -> ActionResult:
+    #     action_result = ActionResult(status=True)
+    #     try:
+    #         if fields is None:
+    #             cursor = self.__collection.find(filter_query)
+    #         else:
+    #             cursor = self.__collection.find(filter_query, fields)
+    #
+    #         data = []
+    #
+    #         for doc in await cursor.to_list(None):
+    #             data.append(doc)
+    #
+    #         if len(data) == 0:
+    #             action_result.message = TextMessages.NOT_FOUND
+    #         else:
+    #             json_data = json.loads(json_util.dumps(cursor))
+    #             action_result.data = json_data
+    #             action_result.message = TextMessages.FOUND
+    #     except Exception as e:
+    #         action_result.status = False
+    #         action_result.message = TextMessages.ACTION_FAILED
+    #     finally:
+    #         return action_result
