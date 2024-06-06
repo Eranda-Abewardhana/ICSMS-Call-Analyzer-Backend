@@ -240,6 +240,13 @@ operator_calls_over_time_pipeline = [
     group_and_count_sentiment_category
 ]
 
+operator_calls_andAvg_call_time_pipeline = [
+    add_string_id,
+    join_analytic_records,
+    remove_string_id,
+    convert_object_to_analytics_record_array,
+]
+
 
 def operator_analytics_pipeline(operator_id: int) -> list[dict]:
     pipeline = [
@@ -255,6 +262,31 @@ def operator_analytics_pipeline(operator_id: int) -> list[dict]:
         add_boolean_category_fields,
         group_records_by_sentiment_category,
         project_data_without_id
+    ]
+
+    return pipeline
+
+
+def operator_rating_pipeline(limit: int) -> list[dict]:
+    pipeline = [
+        {
+            '$group': {
+                '_id': '$operator_id',
+                'total': {
+                    '$count': {}
+                },
+                'avg_duration': {
+                    '$avg': '$call_duration'
+                }
+            }
+        }, {
+            '$sort': {
+                'total': -1,
+                'avg_duration': 1
+            }
+        }, {
+            '$limit': limit
+        }
     ]
 
     return pipeline

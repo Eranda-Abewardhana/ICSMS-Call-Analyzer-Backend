@@ -6,16 +6,13 @@ from typing import List
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.config import Configurations
-from app.config.constants import TextMessages
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
-from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
 from app.models.s3_request import S3Request
+from app.tasks.celery_tasks import analyze_and_save_calls
 from app.utils.data_masking import DataMasker
-from app.utils.helpers import get_audio_duration
 from app.utils.keyword_extractor import KeywordExtractor
-from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.topic_modler import TopicModeler
@@ -114,58 +111,10 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
         await file.close()
         action_result.error_message = []
+    filepath_list = []
     for filename in os.listdir(Configurations.UPLOAD_FOLDER):
         filepath = os.path.join(Configurations.UPLOAD_FOLDER, filename)
-
-        # Check if it is a file
-        if os.path.isfile(filepath):
-            # Specify the path to your audio file
-            try:
-                transcription = transcriber.transcribe_audio(filepath)
-                masked_transcription = masking_analyzer.mask_text(transcription)
-                print('Masked Data ' + masked_transcription)
-
-                operator_id = int(filename.split("_")[0])
-                call_date = filename.split('_')[1]
-                call_time = filename.split('_')[2]
-                filename_text = filename.split('.')[0]
-                call_description = "_".join(filename_text.split("_")[3:])
-
-                call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
-
-                call_record = CallRecord(description=call_description, transcription=masked_transcription,
-                                         call_duration=get_audio_duration(filepath),
-                                         call_date=call_datetime,
-                                         operator_id=operator_id,
-                                         call_recording_url="")
-                result = await db.add_entity(call_record)
-
-                summary = summary_analyzer.generate_summary(masked_transcription)
-                print('Summary Data ' + summary)
-
-                sentiment = sentiment_analyzer.analyze(transcription, Configurations.sentiment_categories)
-                sentiment_score = sentiment_analyzer.get_sentiment_score()
-                print('Sentiment Data ' + sentiment)
-
-                keywords = keyword_extractor.extract_keywords(masked_transcription)
-                topics = topic_modeler.categorize(masked_transcription, Configurations.topics)
-
-                analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
-                                                  call_date=call_datetime, topics=topics,
-                                                  keywords=keywords, summary=summary, sentiment_score=sentiment_score)
-
-                await analytics_db.add_entity(analyzer_record)
-
-                await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                                   Configurations.aws_access_key_id,
-                                   Configurations.aws_secret_access_key)
-
-                # Remove the file after processing
-                os.remove(file_location)
-
-            except Exception as e:
-                action_result.status = False
-                action_result.message = TextMessages.ACTION_FAILED
-                action_result.error_message.append((filename, e))
-
+        filepath_list.append(filepath)
+    result = analyze_and_save_calls.delay(filepath_list)
+    action_result.data = result.id
     return action_result
