@@ -1,13 +1,8 @@
-from typing import Optional
 from pydantic import BaseModel, Field
-from typing_extensions import Annotated
-from pydantic.functional_validators import BeforeValidator
-
-PyObjectId = Annotated[str, BeforeValidator(str)]
 
 
-class CallSettings(BaseModel):
-    id: Optional[str] = Field(alias="_id", default=None)
+class SettingsDTO(BaseModel):
+    id: str = Field(...)
     is_email_alerts_enabled: bool = Field(...)
     is_lower_threshold_enabled: bool = Field(...)
     is_upper_threshold_enabled: bool = Field(...)
