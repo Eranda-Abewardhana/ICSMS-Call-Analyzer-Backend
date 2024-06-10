@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 from typing import List
+import asyncio
 
 from app.config.celery_config import celery_app
 from app.config.config import Configurations
@@ -27,8 +28,7 @@ db = DatabaseConnector("calls")
 analytics_db = DatabaseConnector("analytics")
 
 
-@celery_app.task
-def analyze_and_save_calls(filepath_list: List[str]):
+async def _analyze_and_save_calls(filepath_list: List[str]):
     for filepath in filepath_list:
         if os.path.isfile(filepath):
             try:
@@ -50,11 +50,11 @@ def analyze_and_save_calls(filepath_list: List[str]):
                                          call_date=call_datetime,
                                          operator_id=operator_id,
                                          call_recording_url="")
-                result = db.add_entity(call_record)
+                result = await db.add_entity(call_record)
 
-                upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                             Configurations.aws_access_key_id,
-                             Configurations.aws_secret_access_key)
+                await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
+                                   Configurations.aws_access_key_id,
+                                   Configurations.aws_secret_access_key)
 
                 summary = summary_analyzer.generate_summary(masked_transcription)
                 print('Summary Data ' + summary)
@@ -70,8 +70,15 @@ def analyze_and_save_calls(filepath_list: List[str]):
                                                   call_date=call_datetime, topics=topics,
                                                   keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
-                analytics_db.add_entity(analyzer_record)
+                await analytics_db.add_entity(analyzer_record)
 
                 os.remove(filepath)
             except Exception as e:
                 print(e)
+
+
+@celery_app.task
+def analyze_and_save_calls(filepath_list: List[str]):
+    result = asyncio.run(_analyze_and_save_calls(filepath_list))
+    print(result)
+    return result

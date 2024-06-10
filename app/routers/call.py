@@ -118,3 +118,9 @@ async def upload_files(files: List[UploadFile] = File(...)):
     result = analyze_and_save_calls.delay(filepath_list)
     action_result.data = result.id
     return action_result
+
+
+@call_router.get("/analyze-result/{task_id}")
+def get_result(task_id: str):
+    result = analyze_and_save_calls.AsyncResult(task_id)
+    return {"status": result}
