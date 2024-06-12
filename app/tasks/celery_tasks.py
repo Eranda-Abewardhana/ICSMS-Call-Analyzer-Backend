@@ -2,6 +2,7 @@ import os
 from datetime import datetime
 from typing import List
 import asyncio
+import websockets
 
 from app.config.celery_config import celery_app
 from app.config.config import Configurations
@@ -59,7 +60,7 @@ async def _analyze_and_save_calls(filepath_list: List[str]):
                 summary = summary_analyzer.generate_summary(masked_transcription)
                 print('Summary Data ' + summary)
 
-                sentiment = sentiment_analyzer.analyze(transcription, Configurations.sentiment_categories)
+                sentiment = sentiment_analyzer.analyze(transcription)
                 sentiment_score = sentiment_analyzer.get_sentiment_score()
                 print('Sentiment Data ' + sentiment)
 
@@ -77,8 +78,16 @@ async def _analyze_and_save_calls(filepath_list: List[str]):
                 print(e)
 
 
+async def notify_task_completion(task_id, result):
+    uri = "ws://localhost:8000/ws/notify"
+    async with websockets.connect(uri) as websocket:
+        message = f"Task {task_id} completed with result: {result}"
+        await websocket.send(message)
+
+
 @celery_app.task
 def analyze_and_save_calls(filepath_list: List[str]):
-    result = asyncio.run(_analyze_and_save_calls(filepath_list))
+    task_result = asyncio.run(_analyze_and_save_calls(filepath_list))
+    result = asyncio.run(notify_task_completion(analyze_and_save_calls.request.id, task_result))
     print(result)
     return result
