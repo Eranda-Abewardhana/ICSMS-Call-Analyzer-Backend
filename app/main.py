@@ -14,7 +14,7 @@ from app.routers.call import call_router
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(Configurations.SAVED_FOLDER, exist_ok=True)
 
-app = FastAPI(title="iCSMS Call Analyzer REST API")
+app = FastAPI(title="ICSMS Call Analyzer REST API")
 
 app.add_middleware(
     CORSMiddleware,
