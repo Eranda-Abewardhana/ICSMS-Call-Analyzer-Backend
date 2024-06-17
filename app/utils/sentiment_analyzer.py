@@ -29,6 +29,7 @@ class SentimentAnalyzer:
         self.__text_to_analyze = call_transcription
         chain = self.__prompt_template | self.__model | self.__output_parser
         sentiment = chain.invoke({"transcript": call_transcription, "categories": self.__sentiment_categories})
+        sentiment = self._get_sentiment(sentiment)
         return sentiment
 
     def _get_sentiment(self, llm_response: str) -> str:

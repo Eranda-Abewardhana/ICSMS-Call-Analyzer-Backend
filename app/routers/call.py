@@ -103,7 +103,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
         try:
             file.file.seek(0)  # Ensure we're copying the file from the start
             with open(file_location, "wb") as file_out:
-                shutil.copyfileobj(file.file, file_out)
+                file_out.write(file.file.read())
             print("File saved successfully.")
         except Exception as e:
             print(f"Error saving file: {e}")

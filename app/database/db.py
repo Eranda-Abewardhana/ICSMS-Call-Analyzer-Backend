@@ -26,12 +26,13 @@ class DatabaseConnector:
     async def add_entity(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
+            print(entity.model_dump())
             result = await self.__collection.insert_one(entity.model_dump(by_alias=True, exclude=["id"]))
             action_result.data = result.inserted_id
             action_result.message = TextMessages.INSERT_SUCCESS
         except Exception as e:
             action_result.status = False
-            print(e)
+            print("Exception", e)
             action_result.message = TextMessages.ACTION_FAILED
         finally:
 

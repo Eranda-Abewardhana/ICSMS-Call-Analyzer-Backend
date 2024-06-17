@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 from typing import List
 import asyncio
-import websockets
+
 
 from app.config.celery_config import celery_app
 from app.config.config import Configurations
@@ -17,6 +17,8 @@ from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.topic_modler import TopicModeler
 from app.utils.transcriber import Transcriber
+from app.routers.websockets import broadcast_message
+from app.utils.helpers import extract_call_details_from_filename
 
 summary_analyzer = SummaryAnalyzer()
 masking_analyzer = DataMasker()
@@ -31,18 +33,16 @@ analytics_db = DatabaseConnector("analytics")
 
 async def _analyze_and_save_calls(filepath_list: List[str]):
     for filepath in filepath_list:
+        print(filepath)
         if os.path.isfile(filepath):
             try:
                 filename = filepath.split("\\")[-1]
                 transcription = transcriber.transcribe_audio(filepath)
                 masked_transcription = masking_analyzer.mask_text(transcription)
                 print('Masked Data ' + masked_transcription)
+                print(filename)
 
-                operator_id = int(filename.split("_")[0])
-                call_date = filename.split('_')[1]
-                call_time = filename.split('_')[2]
-                filename_text = filename.split('.')[0]
-                call_description = "_".join(filename_text.split("_")[3:])
+                operator_id, call_date, call_time, call_description = extract_call_details_from_filename(filename)
 
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
@@ -51,7 +51,8 @@ async def _analyze_and_save_calls(filepath_list: List[str]):
                                          call_date=call_datetime,
                                          operator_id=operator_id,
                                          call_recording_url="")
-                result = await db.add_entity(call_record)
+                result = db.add_entity(call_record)
+                print("Call Id", result)
 
                 await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
                                    Configurations.aws_access_key_id,
@@ -71,7 +72,7 @@ async def _analyze_and_save_calls(filepath_list: List[str]):
                                                   call_date=call_datetime, topics=topics,
                                                   keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
-                await analytics_db.add_entity(analyzer_record)
+                analytics_db.add_entity(analyzer_record)
 
                 os.remove(filepath)
             except Exception as e:
@@ -79,10 +80,8 @@ async def _analyze_and_save_calls(filepath_list: List[str]):
 
 
 async def notify_task_completion(task_id, result):
-    uri = "ws://localhost:8000/ws/notify"
-    async with websockets.connect(uri) as websocket:
-        message = f"Task {task_id} completed with result: {result}"
-        await websocket.send(message)
+    message = f"Task {task_id} completed with result: {result}"
+    await broadcast_message(message)
 
 
 @celery_app.task

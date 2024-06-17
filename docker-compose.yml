@@ -1,20 +1,24 @@
 version: '3.8'
 
 services:
-  app:
+  webapi:
+    restart: always
     build: .
-    container_name: my_app
+    container_name: call_analyzer
     ports:
       - "8000:8000"
     env_file:
       - .env
     depends_on:
       - rabbitmq
+    volumes:
+      - ./data:/code/data
+      - ./mp3:/code/mp3
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   rabbitmq:
     image: rabbitmq:3-management
-    container_name: rabbitmq
+    container_name: rabbitmq_server
     ports:
       - "15672:15672"
       - "5672:5672"
@@ -26,8 +30,24 @@ services:
 
   celery:
     build: .
+    restart: always
     container_name: celery_worker
+    volumes:
+      - ./data:/code/data
+      - ./mp3:/code/mp3
     command: celery --app app.config.celery_config.celery_app worker --loglevel=info --pool=solo
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    env_file:
+      - .env
+
+  flower:
+    image: mher/flower
+    container_name: flower
+    command: celery flower
+    ports:
+      - "5555:5555"
     depends_on:
       rabbitmq:
         condition: service_healthy
