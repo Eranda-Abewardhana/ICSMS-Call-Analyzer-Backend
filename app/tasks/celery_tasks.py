@@ -86,12 +86,7 @@ async def notify_task_completion(task_id, result):
 
 @celery_app.task
 def analyze_and_save_calls(filepath_list: List[str]):
-    loop = asyncio.get_event_loop()
-    if loop.is_closed():
-        loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    task_result = loop.run_until_complete(_analyze_and_save_calls(filepath_list))
+    task_result = asyncio.run(_analyze_and_save_calls(filepath_list))
     result = asyncio.run(notify_task_completion(analyze_and_save_calls.request.id, task_result))
     print(result)
     return result
