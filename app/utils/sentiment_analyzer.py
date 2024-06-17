@@ -23,12 +23,20 @@ class SentimentAnalyzer:
 
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["transcript", "categories"])
         self.__default_scale = "linear"
+        self.__sentiment_categories = Configurations.sentiment_categories
 
-    def analyze(self, call_transcription: str, sentiment_categories: list[str]) -> str:
+    def analyze(self, call_transcription: str) -> str:
         self.__text_to_analyze = call_transcription
         chain = self.__prompt_template | self.__model | self.__output_parser
-        sentiment = chain.invoke({"transcript": call_transcription, "categories": sentiment_categories})
+        sentiment = chain.invoke({"transcript": call_transcription, "categories": self.__sentiment_categories})
+        sentiment = self._get_sentiment(sentiment)
         return sentiment
+
+    def _get_sentiment(self, llm_response: str) -> str:
+        for sentiment_category in self.__sentiment_categories:
+            if sentiment_category in llm_response:
+                return sentiment_category
+        return "Neutral"
 
     @staticmethod
     def scale_score(score: float, scale_type: str = "linear") -> float:

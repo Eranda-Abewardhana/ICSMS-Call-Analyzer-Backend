@@ -6,8 +6,7 @@ load_dotenv()
 
 
 class Configurations:
-    UPLOAD_FOLDER = Path(".\data").resolve()
-    SAVED_FOLDER = Path(".\mp3").resolve()
+    UPLOAD_FOLDER = (Path() / "data").resolve()
     sentiment_categories = ["Positive", "Negative", "Neutral"]
     aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
     aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")

@@ -2,7 +2,7 @@ from bson import ObjectId
 from pydantic import BaseModel
 import motor.motor_asyncio
 from pymongo import ReturnDocument
-from pymongo.errors import ServerSelectionTimeoutError
+from pymongo.errors import ServerSelectionTimeoutError, PyMongoError
 from bson import json_util
 import json
 import os
@@ -26,15 +26,19 @@ class DatabaseConnector:
     async def add_entity(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
+            print(entity.model_dump())
             result = await self.__collection.insert_one(entity.model_dump(by_alias=True, exclude=["id"]))
             action_result.data = result.inserted_id
             action_result.message = TextMessages.INSERT_SUCCESS
-        except Exception as e:
+        except PyMongoError as e:
+            print(f"MongoDB error occurred: {e}")
             action_result.status = False
-            print(e)
+            action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            print("Exception", e)
+            action_result.status = False
             action_result.message = TextMessages.ACTION_FAILED
         finally:
-
             return action_result
 
     async def delete_entity(self, entity_id: str) -> ActionResult:
