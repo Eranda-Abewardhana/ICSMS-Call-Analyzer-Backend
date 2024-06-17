@@ -12,7 +12,7 @@ operators_db = DatabaseConnector("operators")
 calls_db = DatabaseConnector("calls")
 
 
-@operator_router.get('/get-all-operators', response_model=ActionResult)
+@operator_router.get('/operators', response_model=ActionResult)
 async def get_all_operators():
     action_result = await operators_db.get_all_entities()
     operators = []
@@ -23,34 +23,34 @@ async def get_all_operators():
     return action_result
 
 
-@operator_router.get('/get-operator/{operator_id}', response_model=ActionResult)
+@operator_router.get('/operators/{operator_id}', response_model=ActionResult)
 async def get_operator(operator_id: int):
     pipeline = operator_analytics_pipeline(operator_id)
     calls_result = await calls_db.run_aggregation(pipeline)
     return calls_result
 
 
-@operator_router.get('/get-operator-id', response_model=ActionResult)
+@operator_router.get('/operator-id', response_model=ActionResult)
 async def get_next_operator_id():
     action_result = await operators_db.run_aggregation(get_next_operator_id_pipeline)
     return action_result
 
 
-@operator_router.post('/add-operator', response_model=ActionResult)
+@operator_router.post('/operators', response_model=ActionResult)
 async def add_operator(operator: CallOperator):
     action_result = await operators_db.add_entity(operator)
     action_result.data = str(action_result.data)
     return action_result
 
 
-@operator_router.put('/update-operator', response_model=ActionResult)
+@operator_router.put('/operators', response_model=ActionResult)
 async def update_operator(operatorDTO: CallOperatorDTO):
     operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, _id=operatorDTO.id)
     action_result = await operators_db.update_entity(operator)
     return action_result
 
 
-@operator_router.delete('/delete-operator/{operator_id}', response_model=ActionResult)
+@operator_router.delete('/operators/{operator_id}', response_model=ActionResult)
 async def delete_operator(operator_id: str):
     action_result = await operators_db.delete_entity(operator_id)
     return action_result

@@ -10,7 +10,7 @@ settings_router = APIRouter()
 db = DatabaseConnector("settings")
 
 
-@settings_router.get("/get-notification-settings", response_model=ActionResult)
+@settings_router.get("/notification-settings", response_model=ActionResult)
 async def get_notification_settings():
     action_result = await db.get_all_entities()
     settings_id = action_result.data[0]["_id"]["$oid"]
@@ -20,7 +20,7 @@ async def get_notification_settings():
     return action_result
 
 
-@settings_router.post("/update-notification-settings", response_model=ActionResult)
+@settings_router.post("/notification-settings", response_model=ActionResult)
 async def update_notification_settings(settings: SettingsDTO):
     settings_dict = settings.dict()
     settings_id = settings_dict["id"]
