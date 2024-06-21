@@ -79,6 +79,8 @@ async def get_calls_list():
         call_list_item = call_record
         call_sentiment_data = await analytics_db.find_entity({"call_id": call_list_item["_id"]["$oid"]},
                                                              {"sentiment_category": 1, "_id": 0})
+        if call_sentiment_data.data == {}:
+            continue
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["id"] = call_list_item["_id"]["$oid"]
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
