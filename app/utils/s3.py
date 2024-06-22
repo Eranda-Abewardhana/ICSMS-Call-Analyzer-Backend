@@ -1,14 +1,16 @@
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
-import aiofiles
 import boto3
 from botocore.exceptions import ClientError
 
 
+class CancelledError(Exception):
+    pass
+
+
 async def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_secret_access_key):
     try:
-        async with aiofiles.open(file_path, mode='rb') as file:
-            data = await file.read()
+        with open(file_path, mode='rb') as file:
+            data = file.read()
 
             s3_client = boto3.client(
                 's3',
@@ -24,8 +26,7 @@ async def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, a
                 )
 
             with ThreadPoolExecutor() as executor:
-                loop = asyncio.get_running_loop()
-                response = await loop.run_in_executor(executor, upload_file)
+                response = executor.submit(upload_file).result()
 
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 print(f"File {object_name} uploaded successfully to {bucket_name}")
@@ -34,7 +35,7 @@ async def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, a
                 print(f"Unexpected response uploading file {object_name}: {response}")
                 return False
 
-    except asyncio.CancelledError:
+    except CancelledError:
         print(f"Upload of {object_name} was cancelled")
         raise
     except ClientError as e:
