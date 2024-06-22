@@ -53,10 +53,6 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                 result = db.add_entity(call_record)
                 print("Call Id", result)
 
-                upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                             Configurations.aws_access_key_id,
-                             Configurations.aws_secret_access_key)
-
                 summary = summary_analyzer.generate_summary(masked_transcription)
                 print('Summary Data ' + summary)
 
@@ -72,6 +68,10 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                                   keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
                 analytics_db.add_entity(analyzer_record)
+
+                upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
+                             Configurations.aws_access_key_id,
+                             Configurations.aws_secret_access_key)
 
                 os.remove(filepath)
             except Exception as e:

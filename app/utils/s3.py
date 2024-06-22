@@ -7,7 +7,7 @@ class CancelledError(Exception):
     pass
 
 
-async def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_secret_access_key):
+def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_secret_access_key):
     try:
         with open(file_path, mode='rb') as file:
             data = file.read()
