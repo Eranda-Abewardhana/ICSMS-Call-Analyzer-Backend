@@ -11,4 +11,4 @@ email_router = APIRouter()
 async def send_reset_mail(mails: mail_body, task:BackgroundTasks):
     data = mails.dict()
     task.add_task(send_mail, data)
-    return True
+    return ActionResult(success=True, message="Reset mail task added")
