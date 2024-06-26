@@ -33,13 +33,13 @@ topic_modeler = TopicModeler()
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
 async def get_call_record_by_id(call_id: str):
-    action_result = await db.get_entity_by_id(call_id)
+    action_result = await db.get_entity_by_id_async(call_id)
     return action_result
 
 
 @call_router.put("/update-call-url", response_model=ActionResult)
 async def update_call_url(s3_request: S3Request):
-    action_result = await db.get_entity_by_id(s3_request.call_id)
+    action_result = await db.get_entity_by_id_async(s3_request.call_id)
     if action_result.status:
         existing_record = action_result.data
         existing_call_record: CallRecord = CallRecord(_id=s3_request.call_id,
@@ -50,15 +50,15 @@ async def update_call_url(s3_request: S3Request):
                                                       call_date=datetime.strptime(existing_record['call_date']['$date'],
                                                                                   '%Y-%m-%dT%H:%M:%SZ'),
                                                       operator_id=existing_record['operator_id'])
-        result = await db.update_entity(existing_call_record)
+        result = await db.update_entity_async(existing_call_record)
         return result
     return action_result
 
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
 async def delete_call_record(call_id: str):
-    action_result_call = await db.delete_entity(call_id)
-    action_result_analytics = await analytics_db.find_and_delete_entity({"call_id": call_id})
+    action_result_call = await db.delete_entity_async(call_id)
+    action_result_analytics = await analytics_db.find_and_delete_entity_async({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
         raise HTTPException(status_code=404, detail="Record not found.")
     return action_result_call and action_result_analytics
@@ -66,19 +66,21 @@ async def delete_call_record(call_id: str):
 
 @call_router.get("/get-all-calls", response_model=ActionResult)
 async def get_all_calls():
-    action_result = await db.get_all_entities()
+    action_result = await db.get_all_entities_async()
     return action_result
 
 
 @call_router.get("/get-calls-list", response_model=ActionResult)
 async def get_calls_list():
-    action_result = await db.get_all_entities()
+    action_result = await db.get_all_entities_async()
     call_collection = action_result.data
     call_list = []
     for call_record in call_collection:
         call_list_item = call_record
-        call_sentiment_data = await analytics_db.find_entity({"call_id": call_list_item["_id"]["$oid"]},
-                                                             {"sentiment_category": 1, "_id": 0})
+        call_sentiment_data = await analytics_db.find_entity_async({"call_id": call_list_item["_id"]["$oid"]},
+                                                                   {"sentiment_category": 1, "_id": 0})
+        if call_sentiment_data.data == {}:
+            continue
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["id"] = call_list_item["_id"]["$oid"]
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
@@ -103,7 +105,7 @@ async def upload_files(files: List[UploadFile] = File(...)):
         try:
             file.file.seek(0)  # Ensure we're copying the file from the start
             with open(file_location, "wb") as file_out:
-                shutil.copyfileobj(file.file, file_out)
+                file_out.write(file.file.read())
             print("File saved successfully.")
         except Exception as e:
             print(f"Error saving file: {e}")
@@ -118,3 +120,9 @@ async def upload_files(files: List[UploadFile] = File(...)):
     result = analyze_and_save_calls.delay(filepath_list)
     action_result.data = result.id
     return action_result
+
+
+@call_router.get("/analyze-result/{task_id}")
+def get_result(task_id: str):
+    result = analyze_and_save_calls.AsyncResult(task_id)
+    return {"status": result}

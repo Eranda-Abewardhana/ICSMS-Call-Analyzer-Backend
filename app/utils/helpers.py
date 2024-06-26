@@ -1,5 +1,6 @@
 from mutagen.mp3 import MP3
 from mutagen.wave import WAVE
+import re
 
 
 def get_audio_duration(audio_file_path: str) -> int:
@@ -14,6 +15,17 @@ def get_audio_duration(audio_file_path: str) -> int:
 
     else:
         raise TypeError(f'Unsupported filetype. Filetype must be either mp3 or wav')
+
+
+def extract_call_details_from_filename(filename: str) -> tuple[int, str, str, str]:
+    operator_id_text = filename.split("_")[0]
+    pattern = r'\d+'
+    operator_id = int(re.findall(pattern, operator_id_text)[0])
+    call_date = filename.split('_')[1]
+    call_time = filename.split('_')[2]
+    filename_text = filename.split('.')[0]
+    call_description = "_".join(filename_text.split("_")[3:])
+    return operator_id, call_date, call_time, call_description
 
 
 def merge_operator_analytics_over_time(operators: list[dict], analytics: list[dict]) -> list[dict]:
