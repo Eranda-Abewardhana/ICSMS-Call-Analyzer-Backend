@@ -16,4 +16,8 @@ class Configurations:
     celery_broker_url = os.getenv("CELERY_BROKER_URL")
     celery_result_backend = os.getenv("CELERY_RESULT_BACKEND")
     celery_config = os.getenv("CELERY_CONFIG")
+    mail_host = os.getenv("MAIL_HOST")
+    mail_username = os.getenv("MAIL_USERNAME")
+    mail_password = os.getenv("MAIL_PASSWORD")
+    mail_port = os.getenv("MAIL_PORT", 465)
     topics = ["Sales", "Payments", "Customer Inquiries", "Technical Support", "Order Tracking"]

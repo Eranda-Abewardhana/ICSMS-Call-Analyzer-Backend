@@ -9,6 +9,7 @@ from app.routers.operators import operator_router
 from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
+from app.routers.sendmail import email_router
 from app.routers.websockets import websocket_endpoint
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
@@ -28,6 +29,7 @@ app.include_router(analytics_router, tags=["Call Analytics"])
 app.include_router(settings_router, tags=["Call Settings"])
 app.include_router(operator_router, tags=["Call Operators"])
 app.include_router(filter_router, tags=["Call Filtering"])
+app.include_router(email_router, tags=["Email Notifications"])
 
 
 @app.websocket("/ws/notify")
