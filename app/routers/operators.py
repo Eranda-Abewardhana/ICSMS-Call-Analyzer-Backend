@@ -33,6 +33,8 @@ async def get_operator(operator_id: int):
 @operator_router.get('/operator-id', response_model=ActionResult)
 async def get_next_operator_id():
     action_result = await operators_db.run_aggregation_async(get_next_operator_id_pipeline)
+    if len(action_result.data) == 0:
+        action_result.data = [{"operator_id": 1}]
     return action_result
 
 
