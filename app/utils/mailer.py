@@ -1,11 +1,12 @@
 from app.config.config import Configurations
-from app.models.send_mail import mail_body
+from app.models.send_mail import MailObject
 from ssl import create_default_context
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
-def send_mail(data: dict| None=None):
-    msg = mail_body(**data)
+
+def send_mail(data: dict):
+    msg = MailObject(**data)
     message = MIMEText(msg.body, "html")
     message["From"] = Configurations.mail_username
     message["To"] = ", ".join(msg.to)

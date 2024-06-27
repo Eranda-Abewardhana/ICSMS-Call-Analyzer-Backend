@@ -1,5 +1,14 @@
 import pymongo
 
+get_topics_pipeline = [
+    {
+        '$project': {
+            'topics': 1,
+            '_id': 0
+        }
+    }
+]
+
 get_next_operator_id_pipeline = [
     {
         '$sort': {
@@ -270,6 +279,17 @@ def operator_analytics_pipeline(operator_id: int) -> list[dict]:
 def operator_rating_pipeline(limit: int) -> list[dict]:
     pipeline = [
         {
+            '$lookup': {
+                'from': 'operators',
+                'localField': 'operator_id',
+                'foreignField': 'operator_id',
+                'as': 'result'
+            }
+        }, {
+            '$unwind': {
+                'path': '$result'
+            }
+        }, {
             '$group': {
                 '_id': '$operator_id',
                 'total': {
@@ -277,6 +297,24 @@ def operator_rating_pipeline(limit: int) -> list[dict]:
                 },
                 'avg_duration': {
                     '$avg': '$call_duration'
+                },
+                'name': {
+                    '$push': '$result.name'
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 1,
+                'total': 1,
+                'avg_duration': {
+                    '$round': [
+                        '$avg_duration', 2
+                    ]
+                },
+                'name': {
+                    '$arrayElemAt': [
+                        '$name', 0
+                    ]
                 }
             }
         }, {
@@ -285,7 +323,7 @@ def operator_rating_pipeline(limit: int) -> list[dict]:
                 'avg_duration': 1
             }
         }, {
-            '$limit': limit
+            '$limit': 3
         }
     ]
 

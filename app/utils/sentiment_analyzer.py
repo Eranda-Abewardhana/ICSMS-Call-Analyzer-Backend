@@ -1,5 +1,5 @@
 import math
-import os
+from dotenv import load_dotenv
 import boto3
 
 from app.config.config import Configurations
@@ -8,7 +8,7 @@ from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-os.environ['GOOGLE_API_KEY'] = "AIzaSyAkwOJZV94Wuq-96EFe17HP-O5VRk7sKyc"
+load_dotenv()
 
 
 class SentimentAnalyzer:

@@ -1,16 +1,17 @@
 import os
 from datetime import datetime
 from typing import List
-import asyncio
 
 from app.config.celery_config import celery_app
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
+from app.models.notification_settings import CallSettings
 from app.utils.data_masking import DataMasker
 from app.utils.helpers import get_audio_duration
 from app.utils.keyword_extractor import KeywordExtractor
+from app.utils.mailer import send_mail
 from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
@@ -28,9 +29,13 @@ topic_modeler = TopicModeler()
 
 db = DatabaseConnector("calls")
 analytics_db = DatabaseConnector("analytics")
+settings_db = DatabaseConnector("settings")
 
 
 def _analyze_and_save_calls(filepath_list: List[str]):
+    settings_result = settings_db.get_all_entities()
+    settings: CallSettings = settings_result.data[0]
+
     for filepath in filepath_list:
         print(filepath)
         if os.path.isfile(filepath):
@@ -61,7 +66,25 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                 print('Sentiment Data ' + sentiment)
 
                 keywords = keyword_extractor.extract_keywords(masked_transcription)
-                topics = topic_modeler.categorize(masked_transcription, Configurations.topics)
+
+                try:
+                    if settings.get("is_keyword_alerts_enabled"):
+                        alert_keywords = []
+                        for keyword in keywords:
+                            if keyword in settings.get("alert_keywords"):
+                                alert_keywords.append(keyword)
+    
+                        if settings.get("is_email_alerts_enabled"):
+                            mail_obj = {
+                                "to": settings.get("alert_email_receptions"),
+                                "subject": "iCSMS: Keywords Detected In Calls",
+                                "body": f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}"
+                            }
+                            send_mail(mail_obj)
+                except Exception as e:
+                    print(e)
+
+                topics = topic_modeler.categorize(masked_transcription, settings.get("topics"))
 
                 analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
                                                   call_date=call_datetime, topics=topics,

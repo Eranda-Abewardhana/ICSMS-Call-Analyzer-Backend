@@ -170,11 +170,36 @@ class DatabaseConnector:
         finally:
             return action_result
 
+    def get_all_entities(self) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            documents = []
+            for document in self.__collection.find({}):
+                json_doc = json.loads(json_util.dumps(document))
+                documents.append(json_doc)
+            action_result.data = documents
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
     async def run_aggregation_async(self, pipeline: list) -> ActionResult:
         action_result = ActionResult(status=True)
         try:
             result = await self.__async_collection.aggregate(pipeline).to_list(None)
             action_result.data = result
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
+    def run_aggregation_sync(self, pipeline: list) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            results = self.__collection.aggregate(pipeline)
+            action_result.data = [result for result in results]
         except Exception as e:
             action_result.status = False
             action_result.message = TextMessages.ACTION_FAILED

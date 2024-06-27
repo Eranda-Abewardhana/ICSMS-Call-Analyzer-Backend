@@ -11,6 +11,7 @@ from app.routers.analytics import analytics_router
 from app.routers.call import call_router
 from app.routers.sendmail import email_router
 from app.routers.websockets import websocket_endpoint
+from app.utils.notification_sender import send_message
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
@@ -35,6 +36,10 @@ app.include_router(email_router, tags=["Email Notifications"])
 @app.websocket("/ws/notify")
 async def analysis_result(websocket: WebSocket):
     await websocket_endpoint(websocket)
+    
+@app.get("/send")
+async def send_fmc_message():
+    send_message()
 
 
 if __name__ == '__main__':

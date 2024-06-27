@@ -1,11 +1,9 @@
-import os
+from dotenv import load_dotenv
 from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-
-os.environ['GOOGLE_API_KEY'] = "AIzaSyAkwOJZV94Wuq-96EFe17HP-O5VRk7sKyc"
-
+load_dotenv()
 
 class SummaryAnalyzer:
     def __init__(self):

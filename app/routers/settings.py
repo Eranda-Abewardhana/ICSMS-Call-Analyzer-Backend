@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.database.aggregation import get_topics_pipeline
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.notification_settings import CallSettings
@@ -28,4 +29,11 @@ async def update_notification_settings(settings: SettingsDTO):
     del settings_dict["id"]
     call_settings = CallSettings(**settings_dict)
     action_result = await db.update_entity_async(call_settings)
+    return action_result
+
+
+@settings_router.get("/topics", response_model=ActionResult)
+def get_topics():
+    action_result = db.run_aggregation_sync(get_topics_pipeline)
+    action_result.data = action_result.data[0]["topics"]
     return action_result
