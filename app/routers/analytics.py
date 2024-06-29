@@ -1,7 +1,8 @@
 from fastapi import APIRouter
 from collections import Counter
 from app.database.aggregation import call_statistics_pipeline, sentiment_percentages_pipeline, \
-    operator_calls_over_time_pipeline, get_all_keywords_pipeline, operator_rating_pipeline
+    operator_calls_over_time_pipeline, get_all_keywords_pipeline, operator_rating_pipeline, \
+    all_operator_sentiment_pipeline
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
@@ -105,4 +106,10 @@ async def get_all_keywords():
 async def get_operator_ratings():
     action_result = await calls_db.run_aggregation_async(operator_rating_pipeline(3))
     action_result.data = action_result.data
+    return action_result
+
+
+@analytics_router.get("/average-operator-sentiment", response_model=ActionResult)
+async def get_average_operator_sentiment():
+    action_result = await calls_db.run_aggregation_async(all_operator_sentiment_pipeline)
     return action_result

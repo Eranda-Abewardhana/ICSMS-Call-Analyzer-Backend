@@ -328,3 +328,26 @@ def operator_rating_pipeline(limit: int) -> list[dict]:
     ]
 
     return pipeline
+
+
+all_operator_sentiment_pipeline = [
+    add_string_id,
+    join_analytic_records,
+    remove_string_id,
+    convert_object_to_analytics_record_array,
+    add_boolean_category_fields,
+    {
+        '$group': {
+            '_id': '$operator_id',
+            'positive_calls': {
+                '$sum': '$is_positive'
+            },
+            'negative_calls': {
+                '$sum': '$is_negative'
+            },
+            'neutral_calls': {
+                '$sum': '$is_neutral'
+            }
+        }
+    }
+]
