@@ -43,8 +43,8 @@ async def read_items(call_filtering: CallFilter):
                     filter_query_calls["call_duration"] = {"$gte": min_duration, "$lte": max_duration}
 
     # Return the filter_query dictionary
-    result_analytics = await analytics_db.find_entities(filter_query_analytics)
-    result_calls = await db.find_entities(filter_query_calls)
+    result_analytics = await analytics_db.find_entities_async(filter_query_analytics)
+    result_calls = await db.find_entities_async(filter_query_calls)
 
     merged_list = []
 

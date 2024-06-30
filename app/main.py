@@ -1,7 +1,7 @@
 import os
 
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from app.config.config import Configurations
 from app.routers.filtering import filter_router
@@ -9,12 +9,13 @@ from app.routers.operators import operator_router
 from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
-from app.tasks.celery_tasks import analyze_and_save_calls
+from app.routers.sendmail import email_router
+from app.routers.websockets import websocket_endpoint
+from app.utils.notification_sender import send_message
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(Configurations.SAVED_FOLDER, exist_ok=True)
 
-app = FastAPI(title="iCSMS Call Analyzer REST API")
+app = FastAPI(title="ICSMS Call Analyzer REST API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,14 +29,18 @@ app.include_router(call_router, tags=["Call Recordings"])
 app.include_router(analytics_router, tags=["Call Analytics"])
 app.include_router(settings_router, tags=["Call Settings"])
 app.include_router(operator_router, tags=["Call Operators"])
-app.include_router(filter_router)
+app.include_router(filter_router, tags=["Call Filtering"])
+app.include_router(email_router, tags=["Email Notifications"])
 
-@app.get("/result/{task_id}")
-def get_result(task_id: str):
-    result = analyze_and_save_calls.AsyncResult(task_id)
-    if result.state == 'SUCCESS':
-        return {"result": result.result}
-    return {"status": result.state}
+
+@app.websocket("/ws/notify")
+async def analysis_result(websocket: WebSocket):
+    await websocket_endpoint(websocket)
+    
+@app.get("/send")
+async def send_fmc_message():
+    send_message()
+
 
 if __name__ == '__main__':
     uvicorn.run(app, port=8080)
