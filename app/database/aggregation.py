@@ -177,53 +177,64 @@ get_all_keywords_pipeline = [
     }
 ]
 
-sentiment_percentages_pipeline = [
-    {
-        '$group': {
-            '_id': None,
-            'positive': {
-                '$sum': {
-                    '$cond': [
-                        {
-                            '$eq': [
-                                '$sentiment_category', 'Positive'
-                            ]
-                        }, 1, 0
-                    ]
-                }
-            },
-            'negative': {
-                '$sum': {
-                    '$cond': [
-                        {
-                            '$eq': [
-                                '$sentiment_category', 'Negative'
-                            ]
-                        }, 1, 0
-                    ]
-                }
-            },
-            'neutral': {
-                '$sum': {
-                    '$cond': [
-                        {
-                            '$eq': [
-                                '$sentiment_category', 'Neutral'
-                            ]
-                        }, 1, 0
-                    ]
+
+def sentiment_percentages_pipeline(start, end):
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
                 }
             }
+        },
+        {
+            '$group': {
+                '_id': None,
+                'positive': {
+                    '$sum': {
+                        '$cond': [
+                            {
+                                '$eq': [
+                                    '$sentiment_category', 'Positive'
+                                ]
+                            }, 1, 0
+                        ]
+                    }
+                },
+                'negative': {
+                    '$sum': {
+                        '$cond': [
+                            {
+                                '$eq': [
+                                    '$sentiment_category', 'Negative'
+                                ]
+                            }, 1, 0
+                        ]
+                    }
+                },
+                'neutral': {
+                    '$sum': {
+                        '$cond': [
+                            {
+                                '$eq': [
+                                    '$sentiment_category', 'Neutral'
+                                ]
+                            }, 1, 0
+                        ]
+                    }
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'positive': 1,
+                'negative': 1,
+                'neutral': 1
+            }
         }
-    }, {
-        '$project': {
-            '_id': 0,
-            'positive': 1,
-            'negative': 1,
-            'neutral': 1
-        }
-    }
-]
+    ]
+
 
 group_and_count_sentiment_category = {
     '$group': {
@@ -257,7 +268,7 @@ operator_calls_andAvg_call_time_pipeline = [
 ]
 
 
-def operator_analytics_pipeline(operator_id: int) -> list[dict]:
+def operator_analytics_pipelines(operator_id: int, end, start) -> tuple[list[dict], list[dict]]:
     pipeline = [
         {
             '$match': {
@@ -273,7 +284,21 @@ def operator_analytics_pipeline(operator_id: int) -> list[dict]:
         project_data_without_id
     ]
 
-    return pipeline
+    calls_in_last_day = [
+        {
+            '$match': {
+                'operator_id': operator_id,
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        }, {
+            '$count': 'total_calls'
+        }
+    ]
+
+    return pipeline, calls_in_last_day
 
 
 def operator_rating_pipeline(limit: int) -> list[dict]:
@@ -329,6 +354,37 @@ def operator_rating_pipeline(limit: int) -> list[dict]:
 
     return pipeline
 
+
+get_topics_distribution_pipeline = [
+    {
+        '$project': {
+            'topics': 1,
+            '_id': 0
+        }
+    }, {
+        '$group': {
+            '_id': None,
+            'topics': {
+                '$push': '$topics'
+            }
+        }
+    }, {
+        '$project': {
+            '_id': 0,
+            'topics': {
+                '$reduce': {
+                    'input': '$topics',
+                    'initialValue': [],
+                    'in': {
+                        '$concatArrays': [
+                            '$$value', '$$this'
+                        ]
+                    }
+                }
+            }
+        }
+    }
+]
 
 all_operator_sentiment_pipeline = [
     add_string_id,
