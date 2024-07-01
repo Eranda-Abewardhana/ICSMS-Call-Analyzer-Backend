@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 
 import redis
@@ -59,9 +60,10 @@ async def redis_listener():
         try:
             # Get the message from redis channel
             message = pubsub.get_message(ignore_subscribe_messages=True)
+
             if message is not None:
                 # Send the notification to all connected clients
-                await manager.send_message(message)
+                await manager.send_message(message['data'])
         except Exception as e:
             print(f"Error in redis_listener: {e}")
         await asyncio.sleep(0.01)
