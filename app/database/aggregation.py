@@ -120,62 +120,146 @@ project_data_without_id = {
     }
 }
 
-call_statistics_pipeline = [
-    {
-        '$group': {
-            '_id': None,
-            'total_calls': {
-                '$count': {}
-            },
-            'total_duration_in_sec': {
-                '$sum': '$call_duration'
-            },
-            'avg_call_time_in_sec': {
-                '$avg': '$call_duration'
-            }
-        }
-    }, {
-        '$project': {
-            '_id': 0,
-            'avg_call_time_in_sec': {
-                '$ceil': '$avg_call_time_in_sec'
-            },
-            'total_calls': 1,
-            'total_duration_in_sec': 1
-        }
-    }
-]
 
-get_all_keywords_pipeline = [
-    {
-        '$project': {
-            'keywords': 1,
-            '_id': 0
-        }
-    }, {
-        '$group': {
-            '_id': None,
-            'keywords': {
-                '$push': '$keywords'
+def call_statistics_pipeline(start, end):
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        },
+        {
+            '$group': {
+                '_id': None,
+                'total_calls': {
+                    '$count': {}
+                },
+                'total_duration_in_sec': {
+                    '$sum': '$call_duration'
+                },
+                'avg_call_time_in_sec': {
+                    '$avg': '$call_duration'
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'avg_call_time_in_sec': {
+                    '$ceil': '$avg_call_time_in_sec'
+                },
+                'total_calls': 1,
+                'total_duration_in_sec': 1
             }
         }
-    }, {
-        '$project': {
-            '_id': 0,
-            'keywords': {
-                '$reduce': {
-                    'input': '$keywords',
-                    'initialValue': [],
-                    'in': {
-                        '$concatArrays': [
-                            '$$value', '$$this'
-                        ]
+    ]
+
+
+def get_all_keywords_pipeline(start, end):
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        },
+        {
+            '$project': {
+                'keywords': 1,
+                '_id': 0
+            }
+        }, {
+            '$group': {
+                '_id': None,
+                'keywords': {
+                    '$push': '$keywords'
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'keywords': {
+                    '$reduce': {
+                        'input': '$keywords',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
                     }
                 }
             }
         }
-    }
-]
+    ]
+
+
+def sentiment_over_time_pipeline(start, end):
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        },
+        {
+            '$group': {
+                '_id': {
+                    '$dateToString': {
+                        'format': '%Y-%m-%d',
+                        'date': '$call_date'
+                    }
+                },
+                'positive': {
+                    '$sum': {
+                        '$cond': [
+                            {
+                                '$eq': [
+                                    '$sentiment_category', 'Positive'
+                                ]
+                            }, 1, 0
+                        ]
+                    }
+                },
+                'negative': {
+                    '$sum': {
+                        '$cond': [
+                            {
+                                '$eq': [
+                                    '$sentiment_category', 'Negative'
+                                ]
+                            }, 1, 0
+                        ]
+                    },
+                },
+                'neutral': {
+                    '$sum': {
+                        '$cond': [
+                            {
+                                '$eq': [
+                                    '$sentiment_category', 'Neutral'
+                                ]
+                            }, 1, 0
+                        ]
+                    }
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'date': '$_id',
+                'positive': 1,
+                'negative': 1,
+                'neutral': 1
+            }
+        }
+    ]
 
 
 def sentiment_percentages_pipeline(start, end):
@@ -251,14 +335,25 @@ group_and_count_sentiment_category = {
     }
 }
 
-operator_calls_over_time_pipeline = [
-    add_string_id,
-    join_analytic_records,
-    remove_string_id,
-    convert_object_to_analytics_record_array,
-    add_boolean_category_fields,
-    group_and_count_sentiment_category
-]
+
+def operator_calls_over_time_pipeline(start, end):
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        },
+        add_string_id,
+        join_analytic_records,
+        remove_string_id,
+        convert_object_to_analytics_record_array,
+        add_boolean_category_fields,
+        group_and_count_sentiment_category
+    ]
+
 
 operator_calls_andAvg_call_time_pipeline = [
     add_string_id,
@@ -301,8 +396,16 @@ def operator_analytics_pipelines(operator_id: int, end, start) -> tuple[list[dic
     return pipeline, calls_in_last_day
 
 
-def operator_rating_pipeline(limit: int) -> list[dict]:
+def operator_rating_pipeline(limit: int, start, end) -> list[dict]:
     pipeline = [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        },
         {
             '$lookup': {
                 'from': 'operators',
@@ -355,36 +458,46 @@ def operator_rating_pipeline(limit: int) -> list[dict]:
     return pipeline
 
 
-get_topics_distribution_pipeline = [
-    {
-        '$project': {
-            'topics': 1,
-            '_id': 0
-        }
-    }, {
-        '$group': {
-            '_id': None,
-            'topics': {
-                '$push': '$topics'
+def get_topics_distribution_pipeline(start, end):
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
             }
-        }
-    }, {
-        '$project': {
-            '_id': 0,
-            'topics': {
-                '$reduce': {
-                    'input': '$topics',
-                    'initialValue': [],
-                    'in': {
-                        '$concatArrays': [
-                            '$$value', '$$this'
-                        ]
+        },
+        {
+            '$project': {
+                'topics': 1,
+                '_id': 0
+            }
+        }, {
+            '$group': {
+                '_id': None,
+                'topics': {
+                    '$push': '$topics'
+                }
+            }
+        }, {
+            '$project': {
+                '_id': 0,
+                'topics': {
+                    '$reduce': {
+                        'input': '$topics',
+                        'initialValue': [],
+                        'in': {
+                            '$concatArrays': [
+                                '$$value', '$$this'
+                            ]
+                        }
                     }
                 }
             }
         }
-    }
-]
+    ]
+
 
 all_operator_sentiment_pipeline = [
     add_string_id,
