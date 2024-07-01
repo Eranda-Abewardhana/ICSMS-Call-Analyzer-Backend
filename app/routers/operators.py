@@ -1,9 +1,11 @@
+from datetime import datetime, timedelta
+
 from fastapi import APIRouter
 
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_operator import CallOperator
-from app.database.aggregation import get_next_operator_id_pipeline, operator_analytics_pipeline
+from app.database.aggregation import get_next_operator_id_pipeline, operator_analytics_pipelines
 from app.models.operator_dto import CallOperatorDTO
 
 operator_router = APIRouter()
@@ -25,8 +27,12 @@ async def get_all_operators():
 
 @operator_router.get('/operators/{operator_id}', response_model=ActionResult)
 async def get_operator(operator_id: int):
-    pipeline = operator_analytics_pipeline(operator_id)
-    calls_result = await calls_db.run_aggregation_async(pipeline)
+    now_time = datetime.now()
+    date_time_before_24_hours = now_time - timedelta(hours=24)
+    operator_details_pipeline, last_day_calls_pipeline = operator_analytics_pipelines(operator_id, now_time, date_time_before_24_hours)
+    calls_result = await calls_db.run_aggregation_async(operator_details_pipeline)
+    last_day_calls_result = await calls_db.run_aggregation_async(last_day_calls_pipeline)
+    calls_result.data[0]["calls_in_last_day"] = last_day_calls_result.data[0]["total_calls"]
     return calls_result
 
 
