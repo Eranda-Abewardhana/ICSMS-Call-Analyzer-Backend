@@ -4,6 +4,7 @@ from ssl import create_default_context
 from email.mime.text import MIMEText
 from smtplib import SMTP
 
+import logging
 
 def send_mail(data: dict):
     msg = MailObject(**data)
@@ -16,12 +17,16 @@ def send_mail(data: dict):
 
     try:
         with SMTP(Configurations.mail_host, Configurations.mail_port) as server:
+            logging.info("Connecting to the SMTP server.")
             server.ehlo()
             server.starttls(context=ctx)
             server.ehlo()
+            logging.info("Logging into the SMTP server.")
             server.login(Configurations.mail_username, Configurations.mail_password)
+            logging.info("Sending the email.")
             server.send_message(message)
             server.quit()
+            logging.info("Email sent successfully.")
         return True
     except Exception as e:
         print(e)
