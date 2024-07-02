@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter
+import requests
 
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
@@ -29,7 +30,8 @@ async def get_all_operators():
 async def get_operator(operator_id: int):
     now_time = datetime.now()
     date_time_before_24_hours = now_time - timedelta(hours=24)
-    operator_details_pipeline, last_day_calls_pipeline = operator_analytics_pipelines(operator_id, now_time, date_time_before_24_hours)
+    operator_details_pipeline, last_day_calls_pipeline = operator_analytics_pipelines(operator_id, now_time,
+                                                                                      date_time_before_24_hours)
     calls_result = await calls_db.run_aggregation_async(operator_details_pipeline)
     last_day_calls_result = await calls_db.run_aggregation_async(last_day_calls_pipeline)
     calls_result.data[0]["calls_in_last_day"] = last_day_calls_result.data[0]["total_calls"]
@@ -45,15 +47,21 @@ async def get_next_operator_id():
 
 
 @operator_router.post('/operators', response_model=ActionResult)
-async def add_operator(operator: CallOperator):
+async def add_operator(operatorDTO: CallOperatorDTO):
+    operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, email=operatorDTO.email)
     action_result = await operators_db.add_entity_async(operator)
+    UM_API_URL = "http://52.66.243.166:8000/newUser"
+    operator_username = "-".join(operator.name.split())
+    data = {"email": operator.email, "username": operator_username, "password": operatorDTO.password}
+    response = requests.post(UM_API_URL, json=data)
     action_result.data = str(action_result.data)
     return action_result
 
 
 @operator_router.put('/operators', response_model=ActionResult)
 async def update_operator(operatorDTO: CallOperatorDTO):
-    operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, _id=operatorDTO.id)
+    operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, _id=operatorDTO.id,
+                            email=operatorDTO.email)
     action_result = await operators_db.update_entity_async(operator)
     return action_result
 
