@@ -40,5 +40,5 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Security(
     jwt_payload = decode_jwt(token)
     roles = jwt_payload.get('cognito:groups', [])
     username = jwt_payload['cognito:username']
-    token_payload = TokenPayload(sub=jwt_payload['sub'], roles=roles, username=username)
+    token_payload = TokenPayload(sub=jwt_payload['sub'], roles=roles, username=username, token=token)
     return token_payload

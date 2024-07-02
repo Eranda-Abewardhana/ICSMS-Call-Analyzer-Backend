@@ -9,3 +9,4 @@ class CallOperator(BaseModel):
     id: Optional[PyObjectId] = Field(alias="_id", default=None)
     operator_id: int = Field(...)
     name: str = Field(...)
+    email: str = Field(...)

@@ -1,8 +1,9 @@
+import json
 import os
 from datetime import datetime
 from typing import List
 
-from app.config.celery_config import celery_app
+from app.config.celery_config import celery_app, redis_client
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
@@ -17,7 +18,6 @@ from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.topic_modler import TopicModeler
 from app.utils.transcriber import Transcriber
-from app.routers.websockets import broadcast_message
 from app.utils.helpers import extract_call_details_from_filename
 
 summary_analyzer = SummaryAnalyzer()
@@ -73,7 +73,7 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                         for keyword in keywords:
                             if keyword in settings.get("alert_keywords"):
                                 alert_keywords.append(keyword)
-    
+
                         if settings.get("is_email_alerts_enabled"):
                             mail_obj = {
                                 "to": settings.get("alert_email_receptions"),
@@ -105,13 +105,8 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                 print(e)
 
 
-def notify_task_completion():
-    message = f"Task completed"
-    broadcast_message(message)
-
-
 @celery_app.task
 def analyze_and_save_calls(filepath_list: List[str]):
     _analyze_and_save_calls(filepath_list)
-    result = notify_task_completion()
-    return result
+    # Publish the task completion notification
+    redis_client.publish("task_notifications", json.dumps({"task_id": 23, "status": "message"}))

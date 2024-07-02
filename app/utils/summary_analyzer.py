@@ -6,11 +6,12 @@ from typing import List
 
 load_dotenv()
 
+
 class SummaryAnalyzer:
     def __init__(self):
         self.__model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
         self.__output_parser = StrOutputParser()
-        self.__template = "Generate a summary of the following text: {text}."
+        self.__template = "Generate a summary of the following masked call transcription: {text}."
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["text"])
         self.__input_token_limit = 2097000  # 2,097,000 tokens
         self.__output_token_limit = 8000  # 8,000 tokens
@@ -56,4 +57,5 @@ class SummaryAnalyzer:
             return final_summary
 
         except Exception as e:
+            print(e)
             return "Error: Unable to generate summary. Please try again later."
