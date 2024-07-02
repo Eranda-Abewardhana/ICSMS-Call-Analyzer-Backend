@@ -1,5 +1,5 @@
 import math
-import os
+from dotenv import load_dotenv
 import boto3
 
 from app.config.config import Configurations
@@ -8,7 +8,7 @@ from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-os.environ['GOOGLE_API_KEY'] = "AIzaSyAkwOJZV94Wuq-96EFe17HP-O5VRk7sKyc"
+load_dotenv()
 
 
 class SentimentAnalyzer:
@@ -23,12 +23,20 @@ class SentimentAnalyzer:
 
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["transcript", "categories"])
         self.__default_scale = "linear"
+        self.__sentiment_categories = Configurations.sentiment_categories
 
-    def analyze(self, call_transcription: str, sentiment_categories: list[str]) -> str:
+    def analyze(self, call_transcription: str) -> str:
         self.__text_to_analyze = call_transcription
         chain = self.__prompt_template | self.__model | self.__output_parser
-        sentiment = chain.invoke({"transcript": call_transcription, "categories": sentiment_categories})
+        sentiment = chain.invoke({"transcript": call_transcription, "categories": self.__sentiment_categories})
+        sentiment = self._get_sentiment(sentiment)
         return sentiment
+
+    def _get_sentiment(self, llm_response: str) -> str:
+        for sentiment_category in self.__sentiment_categories:
+            if sentiment_category in llm_response:
+                return sentiment_category
+        return "Neutral"
 
     @staticmethod
     def scale_score(score: float, scale_type: str = "linear") -> float:

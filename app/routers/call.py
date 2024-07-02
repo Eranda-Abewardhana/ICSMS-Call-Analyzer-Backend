@@ -1,20 +1,18 @@
 import os
 import shutil
 from datetime import datetime
+from typing import List
 
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.config import Configurations
-from app.config.constants import TextMessages
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
-from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
 from app.models.s3_request import S3Request
+from app.tasks.celery_tasks import analyze_and_save_calls
 from app.utils.data_masking import DataMasker
-from app.utils.helpers import get_audio_duration
 from app.utils.keyword_extractor import KeywordExtractor
-from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.topic_modler import TopicModeler
@@ -31,17 +29,18 @@ sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
 keyword_extractor = KeywordExtractor()
 topic_modeler = TopicModeler()
+pendingCalls = []
 
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
 async def get_call_record_by_id(call_id: str):
-    action_result = await db.get_entity_by_id(call_id)
+    action_result = await db.get_entity_by_id_async(call_id)
     return action_result
 
 
 @call_router.put("/update-call-url", response_model=ActionResult)
 async def update_call_url(s3_request: S3Request):
-    action_result = await db.get_entity_by_id(s3_request.call_id)
+    action_result = await db.get_entity_by_id_async(s3_request.call_id)
     if action_result.status:
         existing_record = action_result.data
         existing_call_record: CallRecord = CallRecord(_id=s3_request.call_id,
@@ -52,15 +51,15 @@ async def update_call_url(s3_request: S3Request):
                                                       call_date=datetime.strptime(existing_record['call_date']['$date'],
                                                                                   '%Y-%m-%dT%H:%M:%SZ'),
                                                       operator_id=existing_record['operator_id'])
-        result = await db.update_entity(existing_call_record)
+        result = await db.update_entity_async(existing_call_record)
         return result
     return action_result
 
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
 async def delete_call_record(call_id: str):
-    action_result_call = await db.delete_entity(call_id)
-    action_result_analytics = await analytics_db.find_and_delete_entity({"call_id": call_id})
+    action_result_call = await db.delete_entity_async(call_id)
+    action_result_analytics = await analytics_db.find_and_delete_entity_async({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
         raise HTTPException(status_code=404, detail="Record not found.")
     return action_result_call and action_result_analytics
@@ -68,19 +67,21 @@ async def delete_call_record(call_id: str):
 
 @call_router.get("/get-all-calls", response_model=ActionResult)
 async def get_all_calls():
-    action_result = await db.get_all_entities()
+    action_result = await db.get_all_entities_async()
     return action_result
 
 
 @call_router.get("/get-calls-list", response_model=ActionResult)
 async def get_calls_list():
-    action_result = await db.get_all_entities()
+    action_result = await db.get_all_entities_async()
     call_collection = action_result.data
     call_list = []
     for call_record in call_collection:
         call_list_item = call_record
-        call_sentiment_data = await analytics_db.find_entity({"call_id": call_list_item["_id"]["$oid"]},
-                                                             {"sentiment_category": 1, "_id": 0})
+        call_sentiment_data = await analytics_db.find_entity_async({"call_id": call_list_item["_id"]["$oid"]},
+                                                                   {"sentiment_category": 1, "_id": 0})
+        if call_sentiment_data.data == {}:
+            continue
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["id"] = call_list_item["_id"]["$oid"]
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
@@ -95,75 +96,46 @@ async def get_calls_list():
     return action_result
 
 
-@call_router.post("/upload-calls")
-async def upload_file(file: UploadFile = File(...)):
+@call_router.get("/pendiing-calls-list", response_model=ActionResult)
+def get_pending_calls():
     action_result = ActionResult(status=True)
-    print("Received filename:", file.filename)
-    file_location = os.path.join(Configurations.UPLOAD_FOLDER, file.filename)
+    pendingCalls.clear()
+    action_result.data = pendingCalls
+    for filename in os.listdir(Configurations.UPLOAD_FOLDER):
+        pendingCalls.append(filename.split("_")[-1].split(".")[0])
+    print("Pending Calls", pendingCalls)
+    return action_result
 
-    try:
-        file.file.seek(0)  # Ensure we're copying the file from the start
-        with open(file_location, "wb") as file_out:
-            shutil.copyfileobj(file.file, file_out)
-        print("File saved successfully.")
-    except Exception as e:
-        print(f"Error saving file: {e}")
-        return {"error": "Error saving the file."}
 
-    await file.close()
-    action_result.error_message = []
+@call_router.post("/upload-calls")
+async def upload_files(files: List[UploadFile] = File(...)):
+
+    action_result = ActionResult(status=True)
+    for file in files:
+        print("Received filename:", file.filename)
+        file_location = os.path.join(Configurations.UPLOAD_FOLDER, file.filename)
+
+        try:
+            file.file.seek(0)  # Ensure we're copying the file from the start
+            with open(file_location, "wb") as file_out:
+                file_out.write(file.file.read())
+            print("File saved successfully.")
+        except Exception as e:
+            print(f"Error saving file: {e}")
+            return {"error": "Error saving the file."}
+
+        await file.close()
+        action_result.error_message = []
+    filepath_list = []
     for filename in os.listdir(Configurations.UPLOAD_FOLDER):
         filepath = os.path.join(Configurations.UPLOAD_FOLDER, filename)
-
-        # Check if it is a file
-        if os.path.isfile(filepath):
-            # Specify the path to your audio file
-            try:
-                transcription = transcriber.transcribe_audio(filepath)
-                masked_transcription = masking_analyzer.mask_text(transcription)
-                print('Masked Data ' + masked_transcription)
-
-                operator_id = int(filename.split("_")[0])
-                call_date = filename.split('_')[1]
-                call_time = filename.split('_')[2]
-                filename_text = filename.split('.')[0]
-                call_description = "_".join(filename_text.split("_")[3:])
-
-                call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
-
-                call_record = CallRecord(description=call_description, transcription=masked_transcription,
-                                         call_duration=get_audio_duration(filepath),
-                                         call_date=call_datetime,
-                                         operator_id=operator_id,
-                                         call_recording_url="")
-                result = await db.add_entity(call_record)
-
-                summary = summary_analyzer.generate_summary(masked_transcription)
-                print('Summary Data ' + summary)
-
-                sentiment = sentiment_analyzer.analyze(transcription, Configurations.sentiment_categories)
-                sentiment_score = sentiment_analyzer.get_sentiment_score()
-                print('Sentiment Data ' + sentiment)
-
-                keywords = keyword_extractor.extract_keywords(masked_transcription)
-                topics = topic_modeler.categorize(masked_transcription, Configurations.topics)
-
-                analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
-                                                  call_date=call_datetime, topics=topics,
-                                                  keywords=keywords, summary=summary, sentiment_score=sentiment_score)
-
-                await analytics_db.add_entity(analyzer_record)
-
-                await upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                                   Configurations.aws_access_key_id,
-                                   Configurations.aws_secret_access_key)
-
-                # Remove the file after processing
-                os.remove(file_location)
-
-            except Exception as e:
-                action_result.status = False
-                action_result.message = TextMessages.ACTION_FAILED
-                action_result.error_message.append((filename, e))
-
+        filepath_list.append(filepath)
+    result = analyze_and_save_calls.delay(filepath_list)
+    action_result.data = result.id
     return action_result
+
+
+@call_router.get("/analyze-result/{task_id}")
+def get_result(task_id: str):
+    result = analyze_and_save_calls.AsyncResult(task_id)
+    return {"status": result}
