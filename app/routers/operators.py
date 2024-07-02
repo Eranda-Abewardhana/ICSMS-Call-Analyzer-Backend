@@ -1,18 +1,25 @@
 from datetime import datetime, timedelta
+from typing import Annotated
+from dotenv import load_dotenv
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 import requests
+import os
 
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_operator import CallOperator
 from app.database.aggregation import get_next_operator_id_pipeline, operator_analytics_pipelines
 from app.models.operator_dto import CallOperatorDTO
+from app.models.token_payload import TokenPayload
+from app.utils.auth import get_current_user
 
 operator_router = APIRouter()
 
 operators_db = DatabaseConnector("operators")
 calls_db = DatabaseConnector("calls")
+
+load_dotenv()
 
 
 @operator_router.get('/operators', response_model=ActionResult)
@@ -47,14 +54,25 @@ async def get_next_operator_id():
 
 
 @operator_router.post('/operators', response_model=ActionResult)
-async def add_operator(operatorDTO: CallOperatorDTO):
+async def add_operator(operatorDTO: CallOperatorDTO, payload: Annotated[TokenPayload, Depends(get_current_user)]):
     operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, email=operatorDTO.email)
     action_result = await operators_db.add_entity_async(operator)
-    UM_API_URL = "http://52.66.243.166:8000/newUser"
-    operator_username = "-".join(operator.name.split())
-    data = {"email": operator.email, "username": operator_username, "password": operatorDTO.password}
-    response = requests.post(UM_API_URL, json=data)
-    action_result.data = str(action_result.data)
+    try:
+        operator_username = "-".join(operator.name.split())
+        data = {"email": operator.email, "username": operator_username, "password": operatorDTO.password, "phone_number": "", "roles": ["CallOperator"]}
+        headers = {"Authorization": f"Bearer {payload.token}"}
+        response = requests.post(os.getenv("UM_API_URL"), json=data, headers=headers)
+        if response.status_code != 200:
+            await operators_db.delete_entity_async(str(action_result.data))
+            action_result.status = False
+            action_result.message = "Failed to create user in Cognito"
+        else:
+            action_result.data = str(action_result.data)
+    except Exception as e:
+        print(e)
+        await operators_db.delete_entity_async(str(action_result.data))
+        action_result.status = False
+        action_result.message = "Failed to create user in Cognito"
     return action_result
 
 
