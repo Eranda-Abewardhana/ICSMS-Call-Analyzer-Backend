@@ -42,10 +42,11 @@ jobs:
           password: ${{ secrets.SECOND_DOCKERHUB_TOKEN }}
           logout: true
 
-      - name: Tag Image for Second Repository
-        run: |
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }} ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }}
+      - name: Build and Push Docker Image to Second Account
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
 
-      - name: Push Docker Image to Second Account
-        run: |
-          docker push ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }}
+

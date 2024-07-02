@@ -29,6 +29,7 @@ sentiment_analyzer = SentimentAnalyzer()
 transcriber = Transcriber()
 keyword_extractor = KeywordExtractor()
 topic_modeler = TopicModeler()
+pendingCalls = []
 
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
@@ -95,8 +96,20 @@ async def get_calls_list():
     return action_result
 
 
+@call_router.get("/pendiing-calls-list", response_model=ActionResult)
+def get_pending_calls():
+    action_result = ActionResult(status=True)
+    pendingCalls.clear()
+    action_result.data = pendingCalls
+    for filename in os.listdir(Configurations.UPLOAD_FOLDER):
+        pendingCalls.append(filename.split("_")[-1].split(".")[0])
+    print("Pending Calls", pendingCalls)
+    return action_result
+
+
 @call_router.post("/upload-calls")
 async def upload_files(files: List[UploadFile] = File(...)):
+
     action_result = ActionResult(status=True)
     for file in files:
         print("Received filename:", file.filename)

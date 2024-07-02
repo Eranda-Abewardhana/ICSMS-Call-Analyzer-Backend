@@ -85,12 +85,16 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                     print(e)
 
                 topics = topic_modeler.categorize(masked_transcription, settings.get("topics"))
+                try:
 
-                analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
-                                                  call_date=call_datetime, topics=topics,
-                                                  keywords=keywords, summary=summary, sentiment_score=sentiment_score)
+                    analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
+                                                      call_date=call_datetime, topics=topics,
+                                                      keywords=keywords, summary=summary, sentiment_score=sentiment_score)
 
-                analytics_db.add_entity(analyzer_record)
+                    analytics_db.add_entity(analyzer_record)
+                except Exception as e:
+                    db.delete_entity_async(result)
+                    print(e)
 
                 upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
                              Configurations.aws_access_key_id,
