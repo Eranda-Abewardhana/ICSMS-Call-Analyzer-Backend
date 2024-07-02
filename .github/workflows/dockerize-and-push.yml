@@ -17,7 +17,7 @@ jobs:
         id: meta
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }} /${{ secrets.DOCKERHUB_REPO_NAME }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO_NAME }}
           tags: |
             type=semver,pattern={{version}}
 
@@ -26,7 +26,6 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-          logout: true
 
       - name: Build and Push Docker Image to First Account
         uses: docker/build-push-action@v5
@@ -40,13 +39,10 @@ jobs:
         with:
           username: ${{ secrets.SECOND_DOCKERHUB_USERNAME }}
           password: ${{ secrets.SECOND_DOCKERHUB_TOKEN }}
-          logout: true
 
       - name: Build and Push Docker Image to Second Account
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-
-
+          tags: ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }}
