@@ -4,6 +4,10 @@ from app.utils.mailer import send_mail
 from app.models.action_result import ActionResult
 from app.models.send_mail import MailObject
 
+import logging
+
+logging.basicConfig(level=logging.INFO)
+
 email_router = APIRouter()
 
 
