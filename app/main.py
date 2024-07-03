@@ -15,6 +15,7 @@ from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
 from app.routers.sendmail import email_router
+from app.routers.notification import notification_router
 from app.utils.websockets import ConnectionManager
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
@@ -36,6 +37,7 @@ app.include_router(settings_router, tags=["Call Settings"])
 app.include_router(operator_router, tags=["Call Operators"])
 app.include_router(filter_router, tags=["Call Filtering"])
 app.include_router(email_router, tags=["Email Notifications"])
+app.include_router(notification_router, tags=["Notifications"])
 
 manager = ConnectionManager()
 
