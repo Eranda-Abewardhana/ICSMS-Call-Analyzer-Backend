@@ -5,7 +5,7 @@ from typing import List
 
 import redis
 import uvicorn
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI, WebSocket, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.websockets import WebSocketDisconnect
 
@@ -16,10 +16,11 @@ from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
 from app.routers.sendmail import email_router
+from app.utils.auth import get_current_user
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
-app = FastAPI(title="ICSMS Call Analyzer REST API")
+app = FastAPI(title="ICSMS Call Analyzer REST API", dependencies=[Depends(get_current_user)])
 redis_client = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 app.add_middleware(
@@ -57,7 +58,7 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-@app.websocket("/ws/notify")
+@app.websocket("/ws/notify", )
 async def analysis_result(websocket: WebSocket):
     await manager.connect(websocket)
     await manager.send_message("From WebSocket Server")
