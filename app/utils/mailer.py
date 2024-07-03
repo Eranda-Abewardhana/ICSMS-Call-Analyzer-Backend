@@ -1,8 +1,7 @@
 from app.config.config import Configurations
 from app.models.send_mail import MailObject
-from ssl import create_default_context
 from email.mime.text import MIMEText
-from smtplib import SMTP
+from smtplib import SMTP_SSL
 
 import logging
 
@@ -13,15 +12,8 @@ def send_mail(data: dict):
     message["To"] = ", ".join(msg.to)
     message["Subject"] = msg.subject
 
-    ctx = create_default_context()
-
     try:
-        with SMTP(Configurations.mail_host, Configurations.mail_port) as server:
-            logging.info("Connecting to the SMTP server.")
-            server.ehlo()
-            server.starttls(context=ctx)
-            server.ehlo()
-            logging.info("Logging into the SMTP server.")
+        with SMTP_SSL(Configurations.mail_host, Configurations.mail_port) as server:
             server.login(Configurations.mail_username, Configurations.mail_password)
             logging.info("Sending the email.")
             server.send_message(message)

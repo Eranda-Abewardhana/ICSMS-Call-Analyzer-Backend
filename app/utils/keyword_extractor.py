@@ -10,7 +10,10 @@ class KeywordExtractor:
     def __init__(self):
         self.__model = ChatGoogleGenerativeAI(model="gemini-pro", temperature=0.7)
         self.__output_parser = StrOutputParser()
-        self.__template = ("Extract keywords from this masked call transcription. {transcript}. The only output should be a comma-seperated keywords list. There can be only 10 keywrods of maximum. Also, a keyword should be one wordand should not be masked word")
+        self.__template = ("Extract most important keywords from this masked call transcription. {transcript}. "
+                           "The only output should be a comma-seperated keywords list. "
+                           "There can be only 5 keywords of maximum. "
+                           "Also, a keyword should be one word and should not be masked word")
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["transcript"])
 
     def extract_keywords(self, transcript: str) -> list[str]:

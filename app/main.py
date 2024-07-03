@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+from typing import List
 
 import redis
 import uvicorn
@@ -39,15 +40,35 @@ app.include_router(filter_router, tags=["Call Filtering"])
 app.include_router(email_router, tags=["Email Notifications"])
 app.include_router(notification_router, tags=["Notifications"])
 
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_message(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
 manager = ConnectionManager()
 
 
 @app.websocket("/ws/notify")
 async def analysis_result(websocket: WebSocket):
     await manager.connect(websocket)
+    await manager.send_message("From WebSocket Server")
+    print(websocket)
     try:
         while True:
-            await websocket.receive_text()
+            received_msg = await websocket.receive_text()
+            print(received_msg)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
     except Exception as e:
@@ -65,7 +86,7 @@ async def redis_listener():
 
             if message is not None:
                 # Send the notification to all connected clients
-                await manager.send_message(message['data'])
+                await manager.send_message("From Redis Server")
         except Exception as e:
             print(f"Error in redis_listener: {e}")
         await asyncio.sleep(0.01)
