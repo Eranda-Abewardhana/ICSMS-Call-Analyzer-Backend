@@ -57,51 +57,54 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                          call_recording_url="")
                 result = db.add_entity(call_record)
                 print("Call Id", result)
-
-                summary = summary_analyzer.generate_summary(masked_transcription)
-                print('Summary Data ' + summary)
-
-                sentiment = sentiment_analyzer.analyze(transcription)
-                sentiment_score = sentiment_analyzer.get_sentiment_score()
-                print('Sentiment Data ' + sentiment)
-
-                keywords = keyword_extractor.extract_keywords(masked_transcription)
-
                 try:
-                    if settings.get("is_keyword_alerts_enabled"):
-                        alert_keywords = []
-                        for keyword in keywords:
-                            if keyword in settings.get("alert_keywords"):
-                                alert_keywords.append(keyword)
+                    summary = summary_analyzer.generate_summary(masked_transcription)
+                    print('Summary Data ' + summary)
 
-                        if settings.get("is_email_alerts_enabled"):
-                            mail_obj = {
-                                "to": settings.get("alert_email_receptions"),
-                                "subject": "iCSMS: Keywords Detected In Calls",
-                                "body": f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}"
-                            }
-                            send_mail(mail_obj)
-                except Exception as e:
-                    print(e)
+                    sentiment = sentiment_analyzer.analyze(transcription)
+                    sentiment_score = sentiment_analyzer.get_sentiment_score()
+                    print('Sentiment Data ' + sentiment)
 
-                topics = topic_modeler.categorize(masked_transcription, settings.get("topics"))
-                try:
+                    keywords = keyword_extractor.extract_keywords(masked_transcription)
+
+                    try:
+                        if settings.get("is_keyword_alerts_enabled"):
+                            alert_keywords = []
+                            for keyword in keywords:
+                                if keyword in settings.get("alert_keywords"):
+                                    alert_keywords.append(keyword)
+
+                            if settings.get("is_email_alerts_enabled"):
+                                mail_obj = {
+                                    "to": settings.get("alert_email_receptions"),
+                                    "subject": "iCSMS: Keywords Detected In Calls",
+                                    "body": f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}"
+                                }
+                                send_mail(mail_obj)
+                    except Exception as e:
+                        db.delete_entity(str(result.data))
+                        os.remove(filepath)
+                        print(e)
+
+                    topics = topic_modeler.categorize(masked_transcription, settings.get("topics"))
 
                     analyzer_record = AnalyticsRecord(call_id=str(result.data), sentiment_category=sentiment,
                                                       call_date=call_datetime, topics=topics,
-                                                      keywords=keywords, summary=summary, sentiment_score=sentiment_score)
+                                                      keywords=keywords, summary=summary,
+                                                      sentiment_score=sentiment_score)
 
                     analytics_db.add_entity(analyzer_record)
+                    upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
+                                 Configurations.aws_access_key_id,
+                                 Configurations.aws_secret_access_key)
+                    os.remove(filepath)
                 except Exception as e:
-                    db.delete_entity_async(result)
+                    db.delete_entity(str(result.data))
+                    os.remove(filepath)
                     print(e)
 
-                upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                             Configurations.aws_access_key_id,
-                             Configurations.aws_secret_access_key)
-
-                os.remove(filepath)
             except Exception as e:
+                os.remove(filepath)
                 print(e)
 
 
