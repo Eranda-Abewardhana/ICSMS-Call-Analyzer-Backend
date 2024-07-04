@@ -58,8 +58,7 @@ async def add_operator(operatorDTO: CallOperatorDTO, payload: Annotated[TokenPay
     operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, email=operatorDTO.email)
     action_result = await operators_db.add_entity_async(operator)
     try:
-        operator_username = "-".join(operator.name.split())
-        data = {"email": operator.email, "username": operator_username, "password": operatorDTO.password, "phone_number": "", "roles": ["CallOperator"]}
+        data = {"email": operator.email, "username": operator.email, "password": operatorDTO.password, "phone_number": "", "roles": ["CallOperator"]}
         headers = {"Authorization": f"Bearer {payload.token}"}
         response = requests.post(os.getenv("UM_API_URL"), json=data, headers=headers)
         if response.status_code != 200:
