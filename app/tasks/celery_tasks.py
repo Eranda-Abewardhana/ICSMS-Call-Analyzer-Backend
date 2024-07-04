@@ -82,8 +82,6 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                 }
                                 send_mail(mail_obj)
                     except Exception as e:
-                        db.delete_entity(str(result.data))
-                        os.remove(filepath)
                         print(e)
 
                     topics = topic_modeler.categorize(masked_transcription, settings.get("topics"))
