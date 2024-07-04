@@ -60,8 +60,13 @@ services:
       - .env
 
   redis:
-    image: redis/redis-stack:latest
+    image: redis:latest  # Using the official Redis image
     container_name: redis_server
     ports:
       - "6379:6379"
       - "8001:8001"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
