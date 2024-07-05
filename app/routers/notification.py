@@ -21,16 +21,18 @@ async def get_all_notifications():
 
 
 @notification_router.get('/notifications/{notification_id}', response_model=ActionResult)
-async def get_operator(notification_id: str):
+async def get_notification(notification_id: str):
     notification = await notification_db.get_entity_by_id_async(notification_id)
     return notification
 
 @notification_router.get('/notifications/read/{notification_id}', response_model=ActionResult)
-async def get_operator(notification_id: str):
+async def update_read(notification_id: str):
     notification = await notification_db.get_entity_by_id_async(notification_id)
-    notification['isRead'] = not(notification['isRead'])
+    notification.data['isRead'] = not notification.data['isRead']
+    notification.data['_id'] = notification.data['_id']['$oid']
+    notification = CallNotification(**notification.data)
     action_result = await notification_db.update_entity_async(notification)
-    return notification
+    return action_result
 
 
 @notification_router.post('/addNotification', response_model=ActionResult)
