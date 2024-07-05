@@ -25,6 +25,13 @@ async def get_operator(notification_id: str):
     notification = await notification_db.get_entity_by_id_async(notification_id)
     return notification
 
+@notification_router.get('/notifications/read/{notification_id}', response_model=ActionResult)
+async def get_operator(notification_id: str):
+    notification = await notification_db.get_entity_by_id_async(notification_id)
+    notification['isRead'] = not(notification['isRead'])
+    action_result = await notification_db.update_entity_async(notification)
+    return notification
+
 
 @notification_router.post('/addNotification', response_model=ActionResult)
 async def add_notification(notification: CallNotification):
