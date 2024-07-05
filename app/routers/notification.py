@@ -29,9 +29,9 @@ async def get_notification(notification_id: str):
 async def update_read(notification_id: str):
     notification = await notification_db.get_entity_by_id_async(notification_id)
     notification.data['isRead'] = not notification.data['isRead']
-    print(notification.data)
-    action_result = await notification_db.update_entity_async(notification.data)
-    print(action_result)
+    notification.data['_id'] = notification.data['_id']['$oid']
+    notification = CallNotification(**notification.data)
+    action_result = await notification_db.update_entity_async(notification)
     return action_result
 
 
