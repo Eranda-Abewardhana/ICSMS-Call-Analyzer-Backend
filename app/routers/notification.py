@@ -25,6 +25,7 @@ async def get_notification(notification_id: str):
     notification = await notification_db.get_entity_by_id_async(notification_id)
     return notification
 
+
 @notification_router.get('/notifications/read/{notification_id}', response_model=ActionResult)
 async def update_read(notification_id: str):
     notification = await notification_db.get_entity_by_id_async(notification_id)
@@ -40,6 +41,7 @@ async def add_notification(notification: CallNotification):
     action_result = await notification_db.add_entity_async(notification)
     action_result.data = str(action_result.data)
     return action_result
+
 
 @notification_router.delete('/notifications/{notification_id}', response_model=ActionResult)
 async def delete_operator(notification_id: str):
