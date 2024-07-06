@@ -10,7 +10,6 @@ services:
     env_file:
       - .env
     depends_on:
-      - rabbitmq
       - redis
     volumes:
       - ./data:/code/data
