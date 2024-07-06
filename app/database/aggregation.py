@@ -151,7 +151,8 @@ def call_statistics_pipeline(start, end):
                     '$ceil': '$avg_call_time_in_sec'
                 },
                 'total_calls': 1,
-                'total_duration_in_sec': 1
+                'total_duration_in_sec': 1,
+                'avg_score': 1
             }
         }
     ]
@@ -517,6 +518,32 @@ all_operator_sentiment_pipeline = [
             'neutral_calls': {
                 '$sum': '$is_neutral'
             }
+        }
+    }
+]
+
+def get_overall_avg_sentiment_score_pipeline(start, end): 
+    return [
+        {
+            '$match': {
+                'call_date': {
+                    '$gte': start,
+                    '$lte': end
+                }
+            }
+        },
+    {
+        '$group': {
+            '_id': None,
+            'avg_score': {
+                '$avg': '$sentiment_score'
+            }
+        }
+    },
+    {
+        '$project': {
+            '_id': 0,
+            'avg_score': 1
         }
     }
 ]

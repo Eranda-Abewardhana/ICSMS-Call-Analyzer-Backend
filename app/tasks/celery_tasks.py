@@ -34,7 +34,8 @@ settings_db = DatabaseConnector("settings")
 
 def _analyze_and_save_calls(filepath_list: List[str]):
     settings_result = settings_db.get_all_entities()
-    settings: CallSettings = settings_result.data[0]
+    settings_configuration: CallSettings = settings_result.data[0]
+    settings = json.loads(json.dumps(settings_configuration))
 
     for filepath in filepath_list:
         print(filepath)
@@ -61,8 +62,7 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                     summary = summary_analyzer.generate_summary(masked_transcription)
                     print('Summary Data ' + summary)
 
-                    sentiment = sentiment_analyzer.analyze(transcription)
-                    sentiment_score = sentiment_analyzer.get_sentiment_score()
+                    sentiment, sentiment_score = sentiment_analyzer.analyze_sentiment(transcription)
                     print('Sentiment Data ' + sentiment)
 
                     keywords = keyword_extractor.extract_keywords(masked_transcription)
