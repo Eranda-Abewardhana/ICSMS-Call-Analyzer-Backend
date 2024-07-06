@@ -26,8 +26,6 @@ services:
       - ./mp3:/code/mp3
     command: celery --app app.config.celery_config.celery_app worker --loglevel=info --pool=solo
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       redis:
         condition: service_healthy
     env_file:
