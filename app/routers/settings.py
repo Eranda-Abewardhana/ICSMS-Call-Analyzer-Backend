@@ -1,12 +1,13 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.database.aggregation import get_topics_pipeline
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.notification_settings import CallSettings
 from app.models.settings_dto import SettingsDTO
+from app.utils.auth import get_current_user
 
-settings_router = APIRouter()
+settings_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 db = DatabaseConnector("settings")
 

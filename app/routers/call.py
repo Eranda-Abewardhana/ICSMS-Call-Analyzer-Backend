@@ -1,9 +1,8 @@
 import os
-import shutil
 from datetime import datetime
-from typing import List
+from typing import List, Annotated
 
-from fastapi import APIRouter, HTTPException, UploadFile, File
+from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
 
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
@@ -11,6 +10,7 @@ from app.models.action_result import ActionResult
 from app.models.call_record import CallRecord
 from app.models.s3_request import S3Request
 from app.tasks.celery_tasks import analyze_and_save_calls
+from app.utils.auth import get_current_user
 from app.utils.data_masking import DataMasker
 from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.sentiment_analyzer import SentimentAnalyzer
@@ -33,7 +33,7 @@ pendingCalls = []
 
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
-async def get_call_record_by_id(call_id: str):
+async def get_call_record_by_id(call_id: str, _: Annotated[str, Depends(get_current_user)]):
     action_result = await db.get_entity_by_id_async(call_id)
     return action_result
 
@@ -57,7 +57,7 @@ async def update_call_url(s3_request: S3Request):
 
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
-async def delete_call_record(call_id: str):
+async def delete_call_record(call_id: str, _: Annotated[str, Depends(get_current_user)]):
     action_result_call = await db.delete_entity_async(call_id)
     action_result_analytics = await analytics_db.find_and_delete_entity_async({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
@@ -66,13 +66,13 @@ async def delete_call_record(call_id: str):
 
 
 @call_router.get("/get-all-calls", response_model=ActionResult)
-async def get_all_calls():
+async def get_all_calls(_: Annotated[str, Depends(get_current_user)]):
     action_result = await db.get_all_entities_async()
     return action_result
 
 
 @call_router.get("/get-calls-list", response_model=ActionResult)
-async def get_calls_list():
+async def get_calls_list(_: Annotated[str, Depends(get_current_user)]):
     action_result = await db.get_all_entities_async()
     call_collection = action_result.data
     call_list = []
@@ -80,11 +80,14 @@ async def get_calls_list():
         call_list_item = call_record
         call_sentiment_data = await analytics_db.find_entity_async({"call_id": call_list_item["_id"]["$oid"]},
                                                                    {"sentiment_category": 1, "_id": 0})
+        call_analytics = await analytics_db.find_entity_async({"call_id": call_list_item["_id"]["$oid"]})
         if call_sentiment_data.data == {}:
             continue
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["id"] = call_list_item["_id"]["$oid"]
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
+        call_list_item["topics"] = call_analytics.data["topics"]
+        call_list_item["keywords"] = call_analytics.data["keywords"]
         call_date_time: str = call_record["call_date"]["$date"]
         call_list_item["call_recording_url"]: str = call_list_item["call_recording_url"]
         cal_date, call_time = call_date_time.split("T")
@@ -97,7 +100,7 @@ async def get_calls_list():
 
 
 @call_router.get("/pendiing-calls-list", response_model=ActionResult)
-def get_pending_calls():
+def get_pending_calls(_: Annotated[str, Depends(get_current_user)]):
     action_result = ActionResult(status=True)
     pendingCalls.clear()
     action_result.data = pendingCalls
@@ -108,8 +111,7 @@ def get_pending_calls():
 
 
 @call_router.post("/upload-calls")
-async def upload_files(files: List[UploadFile] = File(...)):
-
+async def upload_files(_: Annotated[str, Depends(get_current_user)], files: List[UploadFile] = File(...)):
     action_result = ActionResult(status=True)
     for file in files:
         print("Received filename:", file.filename)
@@ -136,6 +138,6 @@ async def upload_files(files: List[UploadFile] = File(...)):
 
 
 @call_router.get("/analyze-result/{task_id}")
-def get_result(task_id: str):
+def get_result(task_id: str, _: Annotated[str, Depends(get_current_user)]):
     result = analyze_and_save_calls.AsyncResult(task_id)
     return {"status": result}

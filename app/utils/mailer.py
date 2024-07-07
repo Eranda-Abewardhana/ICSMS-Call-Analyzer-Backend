@@ -3,6 +3,7 @@ from app.models.send_mail import MailObject
 from email.mime.text import MIMEText
 from smtplib import SMTP_SSL
 
+import logging
 
 def send_mail(data: dict):
     msg = MailObject(**data)
@@ -14,8 +15,10 @@ def send_mail(data: dict):
     try:
         with SMTP_SSL(Configurations.mail_host, Configurations.mail_port) as server:
             server.login(Configurations.mail_username, Configurations.mail_password)
+            logging.info("Sending the email.")
             server.send_message(message)
             server.quit()
+            logging.info("Email sent successfully.")
         return True
     except Exception as e:
         print(e)

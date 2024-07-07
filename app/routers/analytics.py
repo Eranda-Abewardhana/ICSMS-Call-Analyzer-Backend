@@ -1,18 +1,20 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from typing import Annotated
 
 from collections import Counter
 from app.database.aggregation import call_statistics_pipeline, sentiment_percentages_pipeline, \
     operator_calls_over_time_pipeline, get_all_keywords_pipeline, operator_rating_pipeline, \
-    all_operator_sentiment_pipeline, get_topics_distribution_pipeline, sentiment_over_time_pipeline
+    all_operator_sentiment_pipeline, get_topics_distribution_pipeline, sentiment_over_time_pipeline, \
+    get_overall_avg_sentiment_score_pipeline
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
+from app.utils.auth import get_current_user
 from app.utils.helpers import merge_operator_analytics_over_time
 
-analytics_router = APIRouter()
+analytics_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 analytics_db = DatabaseConnector("analytics")
 calls_db = DatabaseConnector("calls")
@@ -62,7 +64,9 @@ async def get_call_statistics(start: TimeStampQuery, end: TimeStampQuery):
     start_date = datetime.strptime(start, "%Y-%m-%d-%H-%M-%S")
     end_date = datetime.strptime(end, "%Y-%m-%d-%H-%M-%S")
     action_result = await calls_db.run_aggregation_async(call_statistics_pipeline(start_date, end_date))
+    avg_score_result = await analytics_db.run_aggregation_async(get_overall_avg_sentiment_score_pipeline(start_date, end_date))
     action_result.data = action_result.data[0]
+    action_result.data["avg_score"] = avg_score_result.data[0].get("avg_score") * 10
     return action_result
 
 
@@ -117,7 +121,8 @@ async def get_all_keywords(start: TimeStampQuery, end: TimeStampQuery):
     action_result = await analytics_db.run_aggregation_async(get_all_keywords_pipeline(start_date, end_date))
     action_result.data = action_result.data[0]
     keywords_counter = Counter(action_result.data["keywords"])
-    action_result.data = keywords_counter
+    most_common_50 = keywords_counter.most_common(50)
+    action_result.data = Counter(dict(most_common_50))
     return action_result
 
 

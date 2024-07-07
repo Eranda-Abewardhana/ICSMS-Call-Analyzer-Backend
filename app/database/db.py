@@ -15,7 +15,7 @@ from app.models.action_result import ActionResult
 class DatabaseConnector:
     def __init__(self, collection_name: str):
         self.__connection_string = os.getenv("MONGO_DB_URL")
-        self.__database_name = "call_recordings"
+        self.__database_name = "Call_Recordings"
         self.__async_client = motor.motor_asyncio.AsyncIOMotorClient(self.__connection_string)
         self.__client = pymongo.MongoClient(self.__connection_string)
         try:
@@ -69,6 +69,21 @@ class DatabaseConnector:
         action_result = ActionResult(status=True)
         try:
             delete_result = await self.__async_collection.delete_one({"_id": ObjectId(entity_id)})
+            if delete_result.deleted_count == 1:
+                action_result.message = TextMessages.DELETE_SUCCESS
+            else:
+                action_result.status = False
+                action_result.message = TextMessages.ACTION_FAILED
+        except Exception as e:
+            action_result.status = False
+            action_result.message = TextMessages.ACTION_FAILED
+        finally:
+            return action_result
+
+    def delete_entity(self, entity_id: str) -> ActionResult:
+        action_result = ActionResult(status=True)
+        try:
+            delete_result = self.__collection.delete_one({"_id": ObjectId(entity_id)})
             if delete_result.deleted_count == 1:
                 action_result.message = TextMessages.DELETE_SUCCESS
             else:
