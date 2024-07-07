@@ -26,16 +26,16 @@ jobs:
 
       - name: Deploy to EC2
         env:
-          PRIVATE_KEY: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+          PEM_FILE: ${{ secrets.EC2_SSH_PRIVATE_KEY_PEM }}
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
         run: |
-          echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          echo "$PEM_FILE" > private_key.pem && chmod 600 private_key.pem
           echo "Trying to SSH into ${HOST} with user ${USER}"
-          ssh -v -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} 'echo "SSH connection successful"'
+          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} 'echo "SSH connection successful"'
           echo "SSH connection test completed"
           
-          ssh -v -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} '
+          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} '
             echo "Current directory: $(pwd)"
             ls -al
             cd ICSMS-Call-Analyzer-Backend/ &&
