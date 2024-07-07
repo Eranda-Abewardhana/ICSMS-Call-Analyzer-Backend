@@ -10,19 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3  # Updated to the latest version
+        uses: actions/checkout@v3
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v3  # Updated to the latest version
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_ROOT }}
           aws-secret-access-key: ${{ secrets.AWS_ACCESS_KEY }}
           aws-region: ap-south-1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3  # Ensuring compatibility with Node.js
+        uses: actions/setup-node@v3
         with:
-          node-version: '20'  # or '16' based on your requirements
+          node-version: '20'
 
       - name: Deploy to EC2
         env:
@@ -31,10 +31,21 @@ jobs:
           USER: ${{ secrets.EC2_USER }}
         run: |
           echo "$PRIVATE_KEY" > private_key && chmod 600 private_key
+          echo "Trying to SSH into ${HOST} with user ${USER}"
+          ssh -v -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} 'echo "SSH connection successful"'
+          echo "SSH connection test completed"
+          
           ssh -v -o StrictHostKeyChecking=no -i private_key ${USER}@${HOST} '
+            echo "Current directory: $(pwd)"
+            ls -al
             cd ICSMS-Call-Analyzer-Backend/ &&
+            echo "Changed directory to ICSMS-Call-Analyzer-Backend"
             git pull origin master &&
+            echo "Git pull completed"
             docker-compose down &&
+            echo "Docker Compose down completed"
             docker-compose build &&
-            docker-compose up -d
-          '
+            echo "Docker Compose build completed"
+            docker-compose up -d &&
+            echo "Docker Compose up completed"
+          ' || { echo "SSH command failed"; exit 1; }
