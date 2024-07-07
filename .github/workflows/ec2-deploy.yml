@@ -42,16 +42,9 @@ jobs:
           echo "Starting deployment"
           ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} '
             set -e
-            echo "Current directory: $(pwd)"
-            ls -al
-            cd ICSMS-Call-Analyzer-Backend/ &&
-            echo "Changed directory to ICSMS-Call-Analyzer-Backend"
-            git pull origin master &&
-            echo "Git pull completed"
-            docker-compose down &&
-            echo "Docker Compose down completed"
-            docker-compose build &&
-            echo "Docker Compose build completed"
-            docker-compose up -d &&
-            echo "Docker Compose up completed"
+            cd ICSMS-Call-Analyzer-Backend
+            git pull origin master
+            docker-compose down
+            docker-compose build
+            docker-compose up -d
           ' || { echo "Deployment failed"; exit 1; }
