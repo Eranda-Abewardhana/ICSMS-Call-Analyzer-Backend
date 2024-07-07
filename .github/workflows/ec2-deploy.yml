@@ -38,30 +38,31 @@ jobs:
           echo "SSH key setup completed"
 
           echo "Testing SSH connection"
-          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} 'echo "SSH connection successful"' || { echo "SSH connection failed"; exit 1; }
+          ssh -v -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -i private_key.pem ${USER}@${HOST} 'echo "SSH connection successful"' || { echo "SSH connection failed"; exit 1; }
           echo "SSH connection test completed"
 
           echo "Starting deployment"
-          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} '
+          ssh -v -o StrictHostKeyChecking=no -o ServerAliveInterval=60 -i private_key.pem ${USER}@${HOST} <<'EOF'
             set -e
+
             echo "Navigating to project directory"
             cd ICSMS-Call-Analyzer-Backend || { echo "Directory not found"; exit 1; }
-            
+
             echo "Pulling latest changes from Git"
             git pull origin master || { echo "Git pull failed"; exit 1; }
-            
+
             echo "Stopping existing Docker containers"
             docker-compose down || { echo "Docker-compose down failed"; exit 1; }
-            
+
             echo "Building Docker containers"
             docker-compose build || { echo "Docker-compose build failed"; exit 1; }
-            
+
             echo "Starting Docker containers"
             docker-compose up -d || { echo "Docker-compose up failed"; exit 1; }
-            
+
             echo "Checking Docker container status"
             docker-compose ps || { echo "Docker-compose ps failed"; exit 1; }
-            
+
             echo "Displaying Docker logs"
             docker-compose logs -f
-          ' || { echo "Deployment failed"; exit 1; }
+          EOF || { echo "Deployment failed"; exit 1; }
