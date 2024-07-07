@@ -1,10 +1,11 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_notification import CallNotification
+from app.utils.auth import get_current_user
 
-notification_router = APIRouter()
+notification_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 notification_db = DatabaseConnector("notifications")
 
