@@ -14,7 +14,7 @@ from app.models.operator_dto import CallOperatorDTO
 from app.models.token_payload import TokenPayload
 from app.utils.auth import get_current_user
 
-operator_router = APIRouter()
+operator_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 operators_db = DatabaseConnector("operators")
 calls_db = DatabaseConnector("calls")
