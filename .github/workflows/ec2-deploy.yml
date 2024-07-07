@@ -31,8 +31,10 @@ jobs:
           USER: ${{ secrets.EC2_USER }}
         run: |
           set -e  # Exit immediately if a command exits with a non-zero status
+          
           echo "Setting up SSH key"
-          echo "$PEM_FILE" > private_key.pem && chmod 600 private_key.pem
+          echo "$PEM_FILE" > private_key.pem
+          chmod 600 private_key.pem
           echo "SSH key setup completed"
 
           echo "Testing SSH connection"
@@ -42,10 +44,24 @@ jobs:
           echo "Starting deployment"
           ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} '
             set -e
+            echo "Navigating to project directory"
             cd ICSMS-Call-Analyzer-Backend || { echo "Directory not found"; exit 1; }
+            
+            echo "Pulling latest changes from Git"
             git pull origin master || { echo "Git pull failed"; exit 1; }
+            
+            echo "Stopping existing Docker containers"
             docker-compose down || { echo "Docker-compose down failed"; exit 1; }
+            
+            echo "Building Docker containers"
             docker-compose build || { echo "Docker-compose build failed"; exit 1; }
+            
+            echo "Starting Docker containers"
             docker-compose up -d || { echo "Docker-compose up failed"; exit 1; }
+            
+            echo "Checking Docker container status"
+            docker-compose ps || { echo "Docker-compose ps failed"; exit 1; }
+            
+            echo "Displaying Docker logs"
             docker-compose logs -f
           ' || { echo "Deployment failed"; exit 1; }
