@@ -121,7 +121,8 @@ async def get_all_keywords(start: TimeStampQuery, end: TimeStampQuery):
     action_result = await analytics_db.run_aggregation_async(get_all_keywords_pipeline(start_date, end_date))
     action_result.data = action_result.data[0]
     keywords_counter = Counter(action_result.data["keywords"])
-    action_result.data = keywords_counter.most_common(50)
+    most_common_50 = keywords_counter.most_common(50)
+    action_result.data = Counter(dict(most_common_50))
     return action_result
 
 
