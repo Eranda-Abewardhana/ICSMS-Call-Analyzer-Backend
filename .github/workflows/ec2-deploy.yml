@@ -30,12 +30,18 @@ jobs:
           HOST: ${{ secrets.EC2_HOST }}
           USER: ${{ secrets.EC2_USER }}
         run: |
+          set -e  # Exit immediately if a command exits with a non-zero status
+          echo "Setting up SSH key"
           echo "$PEM_FILE" > private_key.pem && chmod 600 private_key.pem
-          echo "Trying to SSH into ${HOST} with user ${USER}"
-          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} 'echo "SSH connection successful"'
+          echo "SSH key setup completed"
+
+          echo "Testing SSH connection"
+          ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} 'echo "SSH connection successful"' || { echo "SSH connection failed"; exit 1; }
           echo "SSH connection test completed"
-          
+
+          echo "Starting deployment"
           ssh -v -o StrictHostKeyChecking=no -i private_key.pem ${USER}@${HOST} '
+            set -e
             echo "Current directory: $(pwd)"
             ls -al
             cd ICSMS-Call-Analyzer-Backend/ &&
@@ -48,4 +54,4 @@ jobs:
             echo "Docker Compose build completed"
             docker-compose up -d &&
             echo "Docker Compose up completed"
-          ' || { echo "SSH command failed"; exit 1; }
+          ' || { echo "Deployment failed"; exit 1; }
