@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, Depends
 from typing import Annotated
 
 from collections import Counter
@@ -11,9 +11,10 @@ from app.database.aggregation import call_statistics_pipeline, sentiment_percent
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
+from app.utils.auth import get_current_user
 from app.utils.helpers import merge_operator_analytics_over_time
 
-analytics_router = APIRouter()
+analytics_router = APIRouter(dependencies=[Depends(get_current_user)])
 
 analytics_db = DatabaseConnector("analytics")
 calls_db = DatabaseConnector("calls")
@@ -120,7 +121,8 @@ async def get_all_keywords(start: TimeStampQuery, end: TimeStampQuery):
     action_result = await analytics_db.run_aggregation_async(get_all_keywords_pipeline(start_date, end_date))
     action_result.data = action_result.data[0]
     keywords_counter = Counter(action_result.data["keywords"])
-    action_result.data = keywords_counter
+    most_common_50 = keywords_counter.most_common(50)
+    action_result.data = Counter(dict(most_common_50))
     return action_result
 
 

@@ -15,7 +15,7 @@ from app.models.action_result import ActionResult
 class DatabaseConnector:
     def __init__(self, collection_name: str):
         self.__connection_string = os.getenv("MONGO_DB_URL")
-        self.__database_name = "call_recordings"
+        self.__database_name = "Call_Recordings"
         self.__async_client = motor.motor_asyncio.AsyncIOMotorClient(self.__connection_string)
         self.__client = pymongo.MongoClient(self.__connection_string)
         try:

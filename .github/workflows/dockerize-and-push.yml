@@ -31,6 +31,10 @@ jobs:
           echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
           echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
           echo "MAIL_PORT=${{ secrets.MAIL_PORT }}" >> .env
+          echo "UM_API_URL=${{ secrets.UM_API_URL }}" >> .env
+          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+          echo "STATUS_CHECK_FREQUENCY=${{ secrets.STATUS_CHECK_FREQUENCY }}" >> .env
 
       - name: Extract Metadata
         uses: docker/metadata-action@v5
@@ -54,6 +58,16 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Extract Metadata
+        uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: |
+            ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
+
 
       - name: Docker Login to Second Account
         uses: docker/login-action@v2

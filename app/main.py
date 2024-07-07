@@ -24,8 +24,7 @@ from app.utils.mailer import send_mail
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
-app = FastAPI(title="ICSMS Call Analyzer REST API", dependencies=[Depends(get_current_user)])
-
+app = FastAPI(title="ICSMS Call Analyzer REST API")
 redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), decode_responses=True)
 
 app.add_middleware(
