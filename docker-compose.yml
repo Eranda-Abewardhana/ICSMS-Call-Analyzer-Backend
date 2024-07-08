@@ -10,23 +10,11 @@ services:
     env_file:
       - .env
     depends_on:
-      - rabbitmq
+      - redis
     volumes:
       - ./data:/code/data
       - ./mp3:/code/mp3
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq_server
-    ports:
-      - "15672:15672"
-      - "5672:5672"
-    healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
   celery:
     build: .
@@ -37,7 +25,7 @@ services:
       - ./mp3:/code/mp3
     command: celery --app app.config.celery_config.celery_app worker --loglevel=info --pool=solo
     depends_on:
-      rabbitmq:
+      redis:
         condition: service_healthy
     env_file:
       - .env
@@ -49,7 +37,19 @@ services:
     ports:
       - "5555:5555"
     depends_on:
-      rabbitmq:
+      redis:
         condition: service_healthy
     env_file:
       - .env
+
+  redis:
+    image: redis:latest  # Using the official Redis image
+    container_name: redis_server
+    ports:
+      - "6379:6379"
+      - "8001:8001"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

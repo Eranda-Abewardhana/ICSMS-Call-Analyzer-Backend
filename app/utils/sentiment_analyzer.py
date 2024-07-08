@@ -1,12 +1,14 @@
-import math
 from dotenv import load_dotenv
 import boto3
-
+from datetime import datetime, timedelta
 from app.config.config import Configurations
 
 from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
+
+from app.database.aggregation import get_overall_avg_sentiment_score_pipeline
+from app.database.db import DatabaseConnector
 
 load_dotenv()
 
@@ -24,6 +26,7 @@ class SentimentAnalyzer:
         self.__prompt_template = PromptTemplate(template=self.__template, input_variables=["transcript", "categories"])
         self.__default_scale = "linear"
         self.__sentiment_categories = Configurations.sentiment_categories
+        self.__analytics_db = DatabaseConnector("analytics")
 
     def analyze(self, call_transcription: str) -> str:
         self.__text_to_analyze = call_transcription
@@ -39,31 +42,30 @@ class SentimentAnalyzer:
         return "Neutral"
 
     @staticmethod
-    def scale_score(score: float, scale_type: str = "linear") -> float:
+    def _get_date_month_before() -> datetime:
+        current_date = datetime.now()
 
-        match scale_type:
-            case "linear":
-                return score
-            case "standard":
-                a, b, c, d = 2, 10, 1.23, -1.7
-            case "aggressive":
-                a, b, c, d = 1.1, 0.5, 1.03, 1
-            case "weak":
-                a, b, c, d = 4, 10, 1.95, -4.9
-            case _:
-                raise ValueError("Invalid scale type")
+        # Try to subtract one month
+        one_month_before = current_date.replace(month=current_date.month-1)
 
-        scaled_score = a * math.log10(b * (score + c)) + d
+        # If we went back to the previous year, adjust the year and month
+        if one_month_before.month == current_date.month:
+            if current_date.month == 1:
+                one_month_before = one_month_before.replace(year=current_date.year-1, month=12)
+            else:
+                # This handles cases where the previous month has fewer days
+                last_day_of_previous_month = (current_date.replace(day=1) - timedelta(days=1)).day
+                one_month_before = one_month_before.replace(day=min(current_date.day, last_day_of_previous_month))
+        return one_month_before
 
-        if scaled_score < -1:
-            return -1
-        if scaled_score > 1:
-            return 1
+    def get_overall_avg_sentiment(self) -> dict:
+        today = datetime.today()
+        last_month_day = self._get_date_month_before()
+        action_result = self.__analytics_db.run_aggregation_sync(get_overall_avg_sentiment_score_pipeline(last_month_day, today))
+        return action_result.data[0]
 
-        rounded_scaled_score = round(scale_score, 3)  # type: ignore
-        return rounded_scaled_score
-
-    def get_sentiment_score(self) -> float:
+    def analyze_sentiment(self, call_transcription: str) -> tuple[str, float]:
+        self.__text_to_analyze = call_transcription
         try:
             comprehend = boto3.client(service_name='comprehend', aws_access_key_id=Configurations.aws_access_key_id,
                                       aws_secret_access_key=Configurations.aws_secret_access_key,
@@ -76,6 +78,17 @@ class SentimentAnalyzer:
 
             positive_score: float = sentiment.get('Positive')
             negative_score: float = sentiment.get('Negative')
+            neutral_score: float = sentiment.get('Neutral')
+            mixed_score: float = sentiment.get('Mixed')
+
+            sentiment_category = "Neutral"
+
+            max_score = max(positive_score, negative_score, neutral_score, mixed_score)
+
+            if max_score == positive_score:
+                sentiment_category = "Positive"
+            elif max_score == negative_score:
+                sentiment_category = "Negative"
 
             # Neutral and Mixed are said to have a score of 0. Hence they do not affect the score
             # Furthermore positive + negative + (neutral + mixed) = 1. Hence when we give positive and negative
@@ -90,6 +103,6 @@ class SentimentAnalyzer:
 
             sentiment_score = positive_score - negative_score  # = (+1 * positive) + (-1 * negative)
             scaled_score = self.scale_score(sentiment_score)
-            return scaled_score
+            return sentiment_category, scaled_score
         except Exception as e:
             print(e)

@@ -1,4 +1,4 @@
-name: Build, Tag and Push Docker Image
+name: Build, Tag, and Push Docker Image
 
 on:
   push:
@@ -12,12 +12,36 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Extract Metadata
+      - name: Create .env file
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "BUCKET_NAME=${{ secrets.BUCKET_NAME }}" >> .env
+          echo "AWS_DEFAULT_REGION=${{ secrets.AWS_DEFAULT_REGION }}" >> .env
+          echo "MONGO_DB_URL=${{ secrets.MONGO_DB_URL }}" >> .env
+          echo "CELERY_BROKER_URL=${{ secrets.CELERY_BROKER_URL }}" >> .env
+          echo "CELERY_RESULT_BACKEND=${{ secrets.CELERY_RESULT_BACKEND }}" >> .env
+          echo "COGNITO_REGION=${{ secrets.COGNITO_REGION }}" >> .env
+          echo "COGNITO_POOL_ID=${{ secrets.COGNITO_POOL_ID }}" >> .env
+          echo "COGNITO_APP_CLIENT_ID=${{ secrets.COGNITO_APP_CLIENT_ID }}" >> .env
+          echo "PROFILE_BUCKET_NAME=${{ secrets.PROFILE_BUCKET_NAME }}" >> .env
+          echo "COGNITO_KEYS_URL=https://cognito-idp.${{ secrets.COGNITO_REGION }}.amazonaws.com/${{ secrets.COGNITO_POOL_ID }}/.well-known/jwks.json" >> .env
+          echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env
+          echo "MAIL_HOST=${{ secrets.MAIL_HOST }}" >> .env
+          echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> .env
+          echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> .env
+          echo "MAIL_PORT=${{ secrets.MAIL_PORT }}" >> .env
+          echo "UM_API_URL=${{ secrets.UM_API_URL }}" >> .env
+          echo "REDIS_HOST=${{ secrets.REDIS_HOST }}" >> .env
+          echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
+          echo "STATUS_CHECK_FREQUENCY=${{ secrets.STATUS_CHECK_FREQUENCY }}" >> .env
+
+      - name: Extract Metadata for First Account
         uses: docker/metadata-action@v5
-        id: meta
+        id: meta_first
         with:
           images: |
-            ${{ secrets.DOCKERHUB_USERNAME }} /${{ secrets.DOCKERHUB_REPO_NAME }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO_NAME }}
           tags: |
             type=semver,pattern={{version}}
 
@@ -33,7 +57,16 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta_first.outputs.tags }}
+
+      - name: Extract Metadata for Second Account
+        uses: docker/metadata-action@v5
+        id: meta_second
+        with:
+          images: |
+            ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
 
       - name: Docker Login to Second Account
         uses: docker/login-action@v2
@@ -42,10 +75,9 @@ jobs:
           password: ${{ secrets.SECOND_DOCKERHUB_TOKEN }}
           logout: true
 
-      - name: Tag Image for Second Repository
-        run: |
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }} ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }}
-
-      - name: Push Docker Image to Second Account
-        run: |
-          docker push ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}:${{ steps.meta.outputs.version }}
+      - name: Build and Push Docker Image to Second Account
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta_second.outputs.tags }}
