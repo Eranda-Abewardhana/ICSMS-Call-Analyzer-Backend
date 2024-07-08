@@ -34,7 +34,7 @@ settings_db = DatabaseConnector("settings")
 
 def _analyze_and_save_calls(filepath_list: List[str]):
     settings_result = settings_db.get_all_entities()
-    settings_configuration: CallSettings = settings_result.data[0]
+    settings_configuration: CallSettings = settings_result.data
     settings = json.loads(json.dumps(settings_configuration))
 
     for filepath in filepath_list:
