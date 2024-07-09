@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
 import requests
 import os
-
+from urllib.parse import unquote
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_operator import CallOperator
@@ -58,7 +58,8 @@ async def add_operator(operatorDTO: CallOperatorDTO, payload: Annotated[TokenPay
     operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, email=operatorDTO.email)
     action_result = await operators_db.add_entity_async(operator)
     try:
-        data = {"email": operator.email, "username": operator.email, "password": operatorDTO.password, "phone_number": "", "roles": ["CallOperator"]}
+        data = {"email": operator.email, "username": operator.email, "password": operatorDTO.password,
+                "phone_number": "", "roles": ["CallOperator"]}
         headers = {"Authorization": f"Bearer {payload.token}"}
         response = requests.post(os.getenv("UM_API_URL"), json=data, headers=headers)
         if response.status_code != 200:
@@ -86,4 +87,12 @@ async def update_operator(operatorDTO: CallOperatorDTO):
 @operator_router.delete('/operators/{operator_id}', response_model=ActionResult)
 async def delete_operator(operator_id: str):
     action_result = await operators_db.delete_entity_async(operator_id)
+    return action_result
+
+
+@operator_router.get('/operators-by-email/{operator_email}', response_model=ActionResult)
+async def find_operator_by_email(operator_email: str):
+    # Decode the URL-encoded email parameter
+    decoded_email = unquote(operator_email)
+    action_result = await operators_db.find_entity_async({"email": decoded_email})
     return action_result

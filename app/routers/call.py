@@ -85,6 +85,7 @@ async def get_calls_list(_: Annotated[str, Depends(get_current_user)]):
             continue
         call_sentiment: dict = call_sentiment_data.data
         call_list_item["id"] = call_list_item["_id"]["$oid"]
+        call_list_item["operator_id"] = call_list_item["operator_id"]
         call_list_item["sentiment"] = call_sentiment.get("sentiment_category")
         call_list_item["topics"] = call_analytics.data["topics"]
         call_list_item["keywords"] = call_analytics.data["keywords"]
