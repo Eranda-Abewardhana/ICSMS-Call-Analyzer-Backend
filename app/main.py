@@ -11,6 +11,7 @@ from starlette.websockets import WebSocketDisconnect
 
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
+from app.models.call_notification import CallNotification
 from app.routers.filtering import filter_router
 from app.routers.operators import operator_router
 from app.routers.settings import settings_router
@@ -45,6 +46,7 @@ app.include_router(notification_router, tags=["Notifications"])
 
 sentiment_analyzer = SentimentAnalyzer()
 settings_db = DatabaseConnector("settings")
+notification_db = DatabaseConnector("notifications")
 
 
 class ConnectionManager:
@@ -106,7 +108,7 @@ async def startup_event():
 
 @app.on_event("startup")
 @repeat_every(seconds=Configurations.status_check_frequency, wait_first=True)
-def check_overall_sentiment_score():
+async def check_overall_sentiment_score():
     print("Checking overall sentiment score")
     avg_score_data = sentiment_analyzer.get_overall_avg_sentiment()
     avg_score = avg_score_data.get("avg_score")
@@ -127,6 +129,10 @@ def check_overall_sentiment_score():
                    f"based on the data with last month.")
             mail = {"subject": subject, "body": body, "to": receptions}
             send_mail(mail)
+        elif settings_configuration.get('is_push_notifications_enabled'):
+            print("Ok")
+            notification = CallNotification(title="Negative Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone below the threshold", isRead=False)
+            await notification_db.add_entity_async(notification)
 
     if avg_score > upper_threshold:
         if settings_configuration.get('is_email_alerts_enabled'):
@@ -138,6 +144,10 @@ def check_overall_sentiment_score():
             print("Ok")
             mail = {"subject": subject, "body": body, "to": receptions}
             send_mail(mail)
+        elif settings_configuration.get('is_push_notifications_enabled'):
+            print("Ok")
+            notification = CallNotification(title="Negative Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone below the threshold", isRead=False)
+            await notification_db.add_entity_async(notification)
 
 
 if __name__ == '__main__':
