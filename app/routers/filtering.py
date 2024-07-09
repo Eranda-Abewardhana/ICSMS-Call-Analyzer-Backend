@@ -26,7 +26,7 @@ async def read_items(call_filtering: CallFilter):
             # Constructing regex pattern to match any substring containing each keyword
             regex_pattern = f'({"|".join(param_value)})'
             # Using the constructed regex pattern in the query
-            filter_query_analytics = { param_name: {"$regex": regex_pattern}}
+            filter_query_analytics[param_name] = {"$regex": regex_pattern}
             # filter_query_analytics[param_name] = param_value
     for param_name, param_value in zip(["start_date", "end_date", "call_duration"], params_calls):
         if param_value not in ("", []):
