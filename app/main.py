@@ -8,6 +8,7 @@ from fastapi import FastAPI, WebSocket, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_utilities import repeat_every
 from starlette.websockets import WebSocketDisconnect
+import datetime
 
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
@@ -129,10 +130,15 @@ async def check_overall_sentiment_score():
                    f"based on the data with last month.")
             mail = {"subject": subject, "body": body, "to": receptions}
             send_mail(mail)
-        elif settings_configuration.get('is_push_notifications_enabled'):
+        if settings_configuration.get('is_push_notifications_enabled'):
             print("Ok")
-            notification = CallNotification(title="Negative Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone below the threshold", isRead=False)
-            await notification_db.add_entity_async(notification)
+            try:
+                notification = CallNotification(title="Negative Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone below the threshold", isRead=False, datetime=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+                await notification_db.add_entity_async(notification)
+                print("Notification Sent")
+            except Exception as e:
+                print(f"Error in check_overall_sentiment_score: {e}")
+ 
 
     if avg_score > upper_threshold:
         if settings_configuration.get('is_email_alerts_enabled'):
@@ -144,7 +150,7 @@ async def check_overall_sentiment_score():
             print("Ok")
             mail = {"subject": subject, "body": body, "to": receptions}
             send_mail(mail)
-        elif settings_configuration.get('is_push_notifications_enabled'):
+        if settings_configuration.get('is_push_notifications_enabled'):
             print("Ok")
             notification = CallNotification(title="Negative Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone below the threshold", isRead=False)
             await notification_db.add_entity_async(notification)
