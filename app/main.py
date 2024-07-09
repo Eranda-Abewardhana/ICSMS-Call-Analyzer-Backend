@@ -109,7 +109,7 @@ async def startup_event():
 def check_overall_sentiment_score():
     print("Checking overall sentiment score")
     avg_score_data = sentiment_analyzer.get_overall_avg_sentiment()
-    avg_score = avg_score_data.get("avg_score")
+    avg_score = avg_score_data.get("avg_score") * 10
     action_result = settings_db.get_all_entities()
     settings_configuration = action_result.data[0]
     settings_configuration = json.loads(json.dumps(settings_configuration))

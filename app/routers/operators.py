@@ -41,7 +41,8 @@ async def get_operator(operator_id: int):
                                                                                       date_time_before_24_hours)
     calls_result = await calls_db.run_aggregation_async(operator_details_pipeline)
     last_day_calls_result = await calls_db.run_aggregation_async(last_day_calls_pipeline)
-    calls_result.data[0]["calls_in_last_day"] = last_day_calls_result.data[0]["total_calls"]
+    last_calls = last_day_calls_result.data
+    calls_result.data[0]["calls_in_last_day"] = last_calls[0]["total_calls"] if last_calls != [] else 0
     return calls_result
 
 

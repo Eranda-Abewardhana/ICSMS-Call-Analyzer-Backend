@@ -146,4 +146,17 @@ async def get_sentiment_over_time(start: TimeStampQuery, end: TimeStampQuery):
     start_date = datetime.strptime(start, "%Y-%m-%d-%H-%M-%S")
     end_date = datetime.strptime(end, "%Y-%m-%d-%H-%M-%S")
     action_result = await analytics_db.run_aggregation_async(sentiment_over_time_pipeline(start_date, end_date))
+    if len(action_result.data) == 1:
+        date = action_result.data[0].get("date")
+        data_to_fill = {
+            "positive": 0,
+            "negative": 0,
+            "neutral": 0,
+        }
+        if date in start:
+            data_to_fill["date"] = end[:10]
+        else:
+            data_to_fill["date"] = start[:10]
+        action_result.data.append(data_to_fill)
+
     return action_result

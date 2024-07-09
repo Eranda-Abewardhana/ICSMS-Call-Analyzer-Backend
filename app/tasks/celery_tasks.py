@@ -34,7 +34,8 @@ settings_db = DatabaseConnector("settings")
 
 def _analyze_and_save_calls(filepath_list: List[str]):
     settings_result = settings_db.get_all_entities()
-    settings_configuration: CallSettings = settings_result.data
+    settings_configuration: CallSettings = settings_result.data[0]
+    print(settings_configuration)
     settings = json.loads(json.dumps(settings_configuration))
 
     for filepath in filepath_list:
@@ -66,9 +67,12 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                     print('Sentiment Data ' + sentiment)
 
                     keywords = keyword_extractor.extract_keywords(masked_transcription)
+                    print(keywords)
 
                     try:
                         if settings.get("is_keyword_alerts_enabled"):
+                            print("============ OK =============")
+                            print(settings)
                             alert_keywords = []
                             for keyword in keywords:
                                 if keyword in settings.get("alert_keywords"):
@@ -109,5 +113,6 @@ def _analyze_and_save_calls(filepath_list: List[str]):
 @celery_app.task
 def analyze_and_save_calls(filepath_list: List[str]):
     _analyze_and_save_calls(filepath_list)
+    
     # Publish the task completion notification
     redis_client.publish("task_notifications", json.dumps({"task_id": 23, "status": "message"}))
