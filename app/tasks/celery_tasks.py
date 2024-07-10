@@ -7,6 +7,7 @@ from app.config.celery_config import celery_app, redis_client
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
+from app.models.call_notification import CallNotification
 from app.models.call_record import CallRecord
 from app.models.notification_settings import CallSettings
 from app.utils.data_masking import DataMasker
@@ -30,6 +31,9 @@ topic_modeler = TopicModeler()
 db = DatabaseConnector("calls")
 analytics_db = DatabaseConnector("analytics")
 settings_db = DatabaseConnector("settings")
+notification_db = DatabaseConnector("notifications")
+
+upload_process = True
 
 
 def _analyze_and_save_calls(filepath_list: List[str]):
@@ -90,6 +94,12 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                     "body": f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}"
                                 }
                                 send_mail(mail_obj)
+                            if settings.get("is_push_notifications_enabled"):
+                                notification = CallNotification(title="Keywords Detected In Calls",
+                                                                description=f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}",
+                                                                isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+                                notification_db.add_entity(notification)
+                                print("Notification Sent")
                     except Exception as e:
                         print(e)
 
@@ -105,10 +115,12 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                 except Exception as e:
                     db.delete_entity(str(result.data))
                     os.remove(filepath)
+                    upload_process = False
                     print(e)
 
             except Exception as e:
                 os.remove(filepath)
+                upload_process = False
                 print(e)
 
 
@@ -117,4 +129,17 @@ def analyze_and_save_calls(filepath_list: List[str]):
     _analyze_and_save_calls(filepath_list)
 
     # Publish the task completion notification
+    if upload_process:
+        notification = CallNotification(title="Call Recordings Processed",
+                                        description="Call recordings have been successfully processed and saved to the database.",
+                                        isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        notification_db.add_entity(notification)
+        print("Notification Sent")
+    else:
+        notification = CallNotification(title="Call Recordings Processing Failed",
+                                        description="Call recordings processing failed. Please check the logs for more information.",
+                                        isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        notification_db.add_entity(notification)
+        print("Notification Sent")
+
     redis_client.publish("task_notifications", json.dumps({"task_id": 23, "status": "message"}))
