@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 from fastapi import APIRouter, Depends
 import requests
 import os
-
+from urllib.parse import unquote
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_operator import CallOperator
@@ -41,7 +41,8 @@ async def get_operator(operator_id: int):
                                                                                       date_time_before_24_hours)
     calls_result = await calls_db.run_aggregation_async(operator_details_pipeline)
     last_day_calls_result = await calls_db.run_aggregation_async(last_day_calls_pipeline)
-    calls_result.data[0]["calls_in_last_day"] = last_day_calls_result.data[0]["total_calls"]
+    last_calls = last_day_calls_result.data
+    calls_result.data[0]["calls_in_last_day"] = last_calls[0]["total_calls"] if last_calls != [] else 0
     return calls_result
 
 
@@ -58,9 +59,10 @@ async def add_operator(operatorDTO: CallOperatorDTO, payload: Annotated[TokenPay
     operator = CallOperator(name=operatorDTO.name, operator_id=operatorDTO.operator_id, email=operatorDTO.email)
     action_result = await operators_db.add_entity_async(operator)
     try:
-        data = {"email": operator.email, "username": operator.email, "password": operatorDTO.password, "phone_number": "", "roles": ["CallOperator"]}
+        data = {"email": operator.email, "username": operator.email, "password": operatorDTO.password,
+                "phone_number": "", "roles": ["CallOperator"]}
         headers = {"Authorization": f"Bearer {payload.token}"}
-        response = requests.post(os.getenv("UM_API_URL"), json=data, headers=headers)
+        response = requests.post(os.getenv("UM_API_URL")+"newUser", json=data, headers=headers)
         if response.status_code != 200:
             await operators_db.delete_entity_async(str(action_result.data))
             action_result.status = False
@@ -84,6 +86,18 @@ async def update_operator(operatorDTO: CallOperatorDTO):
 
 
 @operator_router.delete('/operators/{operator_id}', response_model=ActionResult)
-async def delete_operator(operator_id: str):
+async def delete_operator(operator_id: str, payload: Annotated[TokenPayload, Depends(get_current_user)]):
+    operator = await operators_db.get_entity_by_id_async(operator_id)
+    headers = {"Authorization": f"Bearer {payload.token}"}
+    response = requests.delete(os.getenv("UM_API_URL")+"deleteUser/"+operator.data["email"], headers=headers)
     action_result = await operators_db.delete_entity_async(operator_id)
+    print(response)
+    return action_result
+
+
+@operator_router.get('/operators-by-email/{operator_email}', response_model=ActionResult)
+async def find_operator_by_email(operator_email: str):
+    # Decode the URL-encoded email parameter
+    decoded_email = unquote(operator_email)
+    action_result = await operators_db.find_entity_async({"email": decoded_email})
     return action_result

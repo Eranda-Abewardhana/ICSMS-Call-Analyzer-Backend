@@ -102,7 +102,6 @@ class SentimentAnalyzer:
             #   if positive & negative near 0 -> neutral low (in aws response), mixed high
 
             sentiment_score = positive_score - negative_score  # = (+1 * positive) + (-1 * negative)
-            scaled_score = self.scale_score(sentiment_score)
-            return sentiment_category, scaled_score
+            return sentiment_category, sentiment_score
         except Exception as e:
             print(e)

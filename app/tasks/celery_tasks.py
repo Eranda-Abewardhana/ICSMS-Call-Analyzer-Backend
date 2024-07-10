@@ -7,6 +7,7 @@ from app.config.celery_config import celery_app, redis_client
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
+from app.models.call_notification import CallNotification
 from app.models.call_record import CallRecord
 from app.models.notification_settings import CallSettings
 from app.utils.data_masking import DataMasker
@@ -30,11 +31,15 @@ topic_modeler = TopicModeler()
 db = DatabaseConnector("calls")
 analytics_db = DatabaseConnector("analytics")
 settings_db = DatabaseConnector("settings")
+notification_db = DatabaseConnector("notifications")
+
+upload_process = True
 
 
 def _analyze_and_save_calls(filepath_list: List[str]):
     settings_result = settings_db.get_all_entities()
     settings_configuration: CallSettings = settings_result.data[0]
+    print(settings_configuration)
     settings = json.loads(json.dumps(settings_configuration))
 
     for filepath in filepath_list:
@@ -51,11 +56,16 @@ def _analyze_and_save_calls(filepath_list: List[str]):
 
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
+                s3_object_url = upload_to_s3(filepath, Configurations.bucket_name,
+                                             filename,
+                                             Configurations.aws_access_key_id,
+                                             Configurations.aws_secret_access_key)
+                print(s3_object_url)
                 call_record = CallRecord(description=call_description, transcription=masked_transcription,
                                          call_duration=get_audio_duration(filepath),
                                          call_date=call_datetime,
                                          operator_id=operator_id,
-                                         call_recording_url="")
+                                         call_recording_url=f"https://{Configurations.bucket_name}.s3.amazonaws.com/{filename}")
                 result = db.add_entity(call_record)
                 print("Call Id", result)
                 try:
@@ -66,9 +76,12 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                     print('Sentiment Data ' + sentiment)
 
                     keywords = keyword_extractor.extract_keywords(masked_transcription)
+                    print(keywords)
 
                     try:
                         if settings.get("is_keyword_alerts_enabled"):
+                            print("============ OK =============")
+                            print(settings)
                             alert_keywords = []
                             for keyword in keywords:
                                 if keyword in settings.get("alert_keywords"):
@@ -81,6 +94,12 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                     "body": f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}"
                                 }
                                 send_mail(mail_obj)
+                            if settings.get("is_push_notifications_enabled"):
+                                notification = CallNotification(title="Keywords Detected In Calls",
+                                                                description=f"Below keywords are recently detected in call recordings. Keywords: {', '.join(alert_keywords)}",
+                                                                isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+                                notification_db.add_entity(notification)
+                                print("Notification Sent")
                     except Exception as e:
                         print(e)
 
@@ -92,22 +111,35 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                                       sentiment_score=sentiment_score)
 
                     analytics_db.add_entity(analyzer_record)
-                    upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                                 Configurations.aws_access_key_id,
-                                 Configurations.aws_secret_access_key)
                     os.remove(filepath)
                 except Exception as e:
                     db.delete_entity(str(result.data))
                     os.remove(filepath)
+                    upload_process = False
                     print(e)
 
             except Exception as e:
                 os.remove(filepath)
+                upload_process = False
                 print(e)
 
 
 @celery_app.task
 def analyze_and_save_calls(filepath_list: List[str]):
     _analyze_and_save_calls(filepath_list)
+
     # Publish the task completion notification
+    if upload_process:
+        notification = CallNotification(title="Call Recordings Processed",
+                                        description="Call recordings have been successfully processed and saved to the database.",
+                                        isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        notification_db.add_entity(notification)
+        print("Notification Sent")
+    else:
+        notification = CallNotification(title="Call Recordings Processing Failed",
+                                        description="Call recordings processing failed.",
+                                        isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
+        notification_db.add_entity(notification)
+        print("Notification Sent")
+
     redis_client.publish("task_notifications", json.dumps({"task_id": 23, "status": "message"}))

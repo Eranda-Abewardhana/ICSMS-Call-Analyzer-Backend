@@ -36,9 +36,9 @@ jobs:
           echo "REDIS_PORT=${{ secrets.REDIS_PORT }}" >> .env
           echo "STATUS_CHECK_FREQUENCY=${{ secrets.STATUS_CHECK_FREQUENCY }}" >> .env
 
-      - name: Extract Metadata
+      - name: Extract Metadata for First Account
         uses: docker/metadata-action@v5
-        id: meta
+        id: meta_first
         with:
           images: |
             ${{ secrets.DOCKERHUB_USERNAME }}/${{ secrets.DOCKERHUB_REPO_NAME }}
@@ -57,7 +57,16 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta_first.outputs.tags }}
+
+      - name: Extract Metadata for Second Account
+        uses: docker/metadata-action@v5
+        id: meta_second
+        with:
+          images: |
+            ${{ secrets.SECOND_DOCKERHUB_USERNAME }}/${{ secrets.SECOND_DOCKERHUB_REPO_NAME }}
+          tags: |
+            type=semver,pattern={{version}}
 
       - name: Docker Login to Second Account
         uses: docker/login-action@v2
@@ -71,4 +80,4 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta_second.outputs.tags }}
