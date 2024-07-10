@@ -52,11 +52,15 @@ def _analyze_and_save_calls(filepath_list: List[str]):
 
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
+                s3_object_url = upload_to_s3(filepath, Configurations.bucket_name,
+                                             filename + "call_record_id" + str(result.data),
+                                             Configurations.aws_access_key_id,
+                                             Configurations.aws_secret_access_key)
                 call_record = CallRecord(description=call_description, transcription=masked_transcription,
                                          call_duration=get_audio_duration(filepath),
                                          call_date=call_datetime,
                                          operator_id=operator_id,
-                                         call_recording_url="")
+                                         call_recording_url=s3_object_url)
                 result = db.add_entity(call_record)
                 print("Call Id", result)
                 try:
@@ -96,9 +100,6 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                                                       sentiment_score=sentiment_score)
 
                     analytics_db.add_entity(analyzer_record)
-                    upload_to_s3(filepath, Configurations.bucket_name, filename + "call_record_id" + str(result.data),
-                                 Configurations.aws_access_key_id,
-                                 Configurations.aws_secret_access_key)
                     os.remove(filepath)
                 except Exception as e:
                     db.delete_entity(str(result.data))
@@ -113,6 +114,6 @@ def _analyze_and_save_calls(filepath_list: List[str]):
 @celery_app.task
 def analyze_and_save_calls(filepath_list: List[str]):
     _analyze_and_save_calls(filepath_list)
-    
+
     # Publish the task completion notification
     redis_client.publish("task_notifications", json.dumps({"task_id": 23, "status": "message"}))

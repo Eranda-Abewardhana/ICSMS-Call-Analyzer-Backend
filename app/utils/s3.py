@@ -7,7 +7,7 @@ class CancelledError(Exception):
     pass
 
 
-def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_secret_access_key):
+def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_secret_access_key) -> str:
     try:
         with open(file_path, mode='rb') as file:
             data = file.read()
@@ -30,7 +30,7 @@ def upload_to_s3(file_path, bucket_name, object_name, aws_access_key_id, aws_sec
 
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 print(f"File {object_name} uploaded successfully to {bucket_name}")
-                return True
+                return f"https://{bucket_name}.s3.amazonaws.com/{object_name}"
             else:
                 print(f"Unexpected response uploading file {object_name}: {response}")
                 return False

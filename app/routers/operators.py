@@ -62,7 +62,7 @@ async def add_operator(operatorDTO: CallOperatorDTO, payload: Annotated[TokenPay
         data = {"email": operator.email, "username": operator.email, "password": operatorDTO.password,
                 "phone_number": "", "roles": ["CallOperator"]}
         headers = {"Authorization": f"Bearer {payload.token}"}
-        response = requests.post(os.getenv("UM_API_URL"), json=data, headers=headers)
+        response = requests.post(os.getenv("UM_API_URL")+"newUser", json=data, headers=headers)
         if response.status_code != 200:
             await operators_db.delete_entity_async(str(action_result.data))
             action_result.status = False
@@ -86,8 +86,12 @@ async def update_operator(operatorDTO: CallOperatorDTO):
 
 
 @operator_router.delete('/operators/{operator_id}', response_model=ActionResult)
-async def delete_operator(operator_id: str):
+async def delete_operator(operator_id: str, payload: Annotated[TokenPayload, Depends(get_current_user)]):
+    operator = await operators_db.get_entity_by_id_async(operator_id)
+    headers = {"Authorization": f"Bearer {payload.token}"}
+    response = requests.delete(os.getenv("UM_API_URL")+"deleteUser/"+operator.data["email"], headers=headers)
     action_result = await operators_db.delete_entity_async(operator_id)
+    print(response)
     return action_result
 
 
