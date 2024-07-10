@@ -4,7 +4,7 @@ import os
 from typing import List
 import redis
 import uvicorn
-from fastapi import FastAPI, WebSocket, Depends, BackgroundTasks
+from fastapi import FastAPI, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_utilities import repeat_every
 from starlette.websockets import WebSocketDisconnect
@@ -18,8 +18,7 @@ from app.routers.operators import operator_router
 from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
-from app.routers.sendmail import email_router, send_reset_mail
-from app.utils.auth import get_current_user
+from app.routers.sendmail import email_router
 from app.routers.notification import notification_router
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.mailer import send_mail
@@ -139,7 +138,6 @@ async def check_overall_sentiment_score():
             except Exception as e:
                 print(f"Error in check_overall_sentiment_score: {e}")
  
-
     if avg_score > upper_threshold:
         if settings_configuration.get('is_email_alerts_enabled'):
             receptions = settings_configuration.get("alert_email_receptions")
@@ -152,7 +150,7 @@ async def check_overall_sentiment_score():
             send_mail(mail)
         if settings_configuration.get('is_push_notifications_enabled'):
             print("Ok")
-            notification = CallNotification(title="Negative Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone below the threshold", isRead=False)
+            notification = CallNotification(title="Positive Overall Sentiment Score Detected", description="Overall call analytics sentiment score has gone above the threshold", isRead=False, datetime=datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
             await notification_db.add_entity_async(notification)
 
 

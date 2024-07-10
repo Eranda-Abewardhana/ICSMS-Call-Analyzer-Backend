@@ -137,7 +137,7 @@ def analyze_and_save_calls(filepath_list: List[str]):
         print("Notification Sent")
     else:
         notification = CallNotification(title="Call Recordings Processing Failed",
-                                        description="Call recordings processing failed. Please check the logs for more information.",
+                                        description="Call recordings processing failed.",
                                         isRead=False, datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ"))
         notification_db.add_entity(notification)
         print("Notification Sent")
