@@ -53,14 +53,15 @@ def _analyze_and_save_calls(filepath_list: List[str]):
                 call_datetime = datetime.strptime(call_date + call_time, '%Y%m%d%H%M%S')
 
                 s3_object_url = upload_to_s3(filepath, Configurations.bucket_name,
-                                             filename + "call_record_id" + str(result.data),
+                                             filename,
                                              Configurations.aws_access_key_id,
                                              Configurations.aws_secret_access_key)
+                print(s3_object_url)
                 call_record = CallRecord(description=call_description, transcription=masked_transcription,
                                          call_duration=get_audio_duration(filepath),
                                          call_date=call_datetime,
                                          operator_id=operator_id,
-                                         call_recording_url=s3_object_url)
+                                         call_recording_url=f"https://{Configurations.bucket_name}.s3.amazonaws.com/{filename}")
                 result = db.add_entity(call_record)
                 print("Call Id", result)
                 try:
