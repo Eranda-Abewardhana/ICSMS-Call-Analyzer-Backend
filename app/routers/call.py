@@ -38,24 +38,6 @@ async def get_call_record_by_id(call_id: str, _: Annotated[str, Depends(get_curr
     return action_result
 
 
-@call_router.put("/update-call-url", response_model=ActionResult)
-async def update_call_url(s3_request: S3Request):
-    action_result = await db.get_entity_by_id_async(s3_request.call_id)
-    if action_result.status:
-        existing_record = action_result.data
-        existing_call_record: CallRecord = CallRecord(_id=s3_request.call_id,
-                                                      description=existing_record["description"],
-                                                      transcription=existing_record['transcription'],
-                                                      call_recording_url=s3_request.call_url,
-                                                      call_duration=existing_record['call_duration'],
-                                                      call_date=datetime.strptime(existing_record['call_date']['$date'],
-                                                                                  '%Y-%m-%dT%H:%M:%SZ'),
-                                                      operator_id=existing_record['operator_id'])
-        result = await db.update_entity_async(existing_call_record)
-        return result
-    return action_result
-
-
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
 async def delete_call_record(call_id: str, _: Annotated[str, Depends(get_current_user)]):
     action_result_call = await db.delete_entity_async(call_id)
