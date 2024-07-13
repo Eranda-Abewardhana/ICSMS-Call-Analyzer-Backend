@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Query, Depends
+from fastapi import APIRouter, Query
 from typing import Annotated
 
 from collections import Counter
@@ -11,10 +11,9 @@ from app.database.aggregation import call_statistics_pipeline, sentiment_percent
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
-from app.utils.auth import get_current_user
 from app.utils.helpers import merge_operator_analytics_over_time
 
-analytics_router = APIRouter(dependencies=[Depends(get_current_user)])
+analytics_router = APIRouter()
 
 analytics_db = DatabaseConnector("analytics")
 calls_db = DatabaseConnector("calls")

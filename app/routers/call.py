@@ -1,16 +1,13 @@
 import os
 from datetime import datetime
-from typing import List, Annotated
+from typing import List
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
-from app.models.call_record import CallRecord
-from app.models.s3_request import S3Request
 from app.tasks.celery_tasks import analyze_and_save_calls
-from app.utils.auth import get_current_user
 from app.utils.data_masking import DataMasker
 from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.sentiment_analyzer import SentimentAnalyzer
@@ -33,13 +30,13 @@ pendingCalls = []
 
 
 @call_router.get("/get-call/{call_id}", response_model=ActionResult)
-async def get_call_record_by_id(call_id: str, _: Annotated[str, Depends(get_current_user)]):
+async def get_call_record_by_id(call_id: str):
     action_result = await db.get_entity_by_id_async(call_id)
     return action_result
 
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
-async def delete_call_record(call_id: str, _: Annotated[str, Depends(get_current_user)]):
+async def delete_call_record(call_id: str):
     action_result_call = await db.delete_entity_async(call_id)
     action_result_analytics = await analytics_db.find_and_delete_entity_async({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
@@ -48,13 +45,13 @@ async def delete_call_record(call_id: str, _: Annotated[str, Depends(get_current
 
 
 @call_router.get("/get-all-calls", response_model=ActionResult)
-async def get_all_calls(_: Annotated[str, Depends(get_current_user)]):
+async def get_all_calls():
     action_result = await db.get_all_entities_async()
     return action_result
 
 
 @call_router.get("/get-calls-list", response_model=ActionResult)
-async def get_calls_list(_: Annotated[str, Depends(get_current_user)]):
+async def get_calls_list():
     action_result = await db.get_all_entities_async()
     call_collection = action_result.data
     call_list = []
@@ -83,7 +80,7 @@ async def get_calls_list(_: Annotated[str, Depends(get_current_user)]):
 
 
 @call_router.get("/pendiing-calls-list", response_model=ActionResult)
-def get_pending_calls(_: Annotated[str, Depends(get_current_user)]):
+def get_pending_calls():
     action_result = ActionResult(status=True)
     pendingCalls.clear()
     action_result.data = pendingCalls
@@ -94,7 +91,7 @@ def get_pending_calls(_: Annotated[str, Depends(get_current_user)]):
 
 
 @call_router.post("/upload-calls")
-async def upload_files(_: Annotated[str, Depends(get_current_user)], files: List[UploadFile] = File(...)):
+async def upload_files(files: List[UploadFile] = File(...)):
     action_result = ActionResult(status=True)
     for file in files:
         print("Received filename:", file.filename)
@@ -121,6 +118,6 @@ async def upload_files(_: Annotated[str, Depends(get_current_user)], files: List
 
 
 @call_router.get("/analyze-result/{task_id}")
-def get_result(task_id: str, _: Annotated[str, Depends(get_current_user)]):
+def get_result(task_id: str):
     result = analyze_and_save_calls.AsyncResult(task_id)
     return {"status": result}

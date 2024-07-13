@@ -1,4 +1,3 @@
-import json
 import logging
 from datetime import datetime
 from email.mime.text import MIMEText
@@ -41,7 +40,7 @@ class NotificationHandler:
             if is_email and len(receivers) > 0:
                 mail_obj = MailObject(
                     to=receivers,
-                    subject="SentiView: Keywords Detected In Calls",
+                    subject="SentiView - Keywords Detected In Calls",
                     body=message_body
                 )
                 cls.__send_email(mail_obj)
@@ -91,14 +90,14 @@ class NotificationHandler:
                 if is_email and len(receivers) > 0:
                     mail_obj = MailObject(
                         to=receivers,
-                        subject="SentiView: Negative Overall Sentiment Score Detected",
+                        subject="SentiView - Low Overall Sentiment Score Alert",
                         body=message_body
                     )
                     cls.__send_email(mail_obj)
 
                 if is_push:
                     notification = CallNotification(
-                        title="Negative Overall Sentiment Score Detected",
+                        title="Low Overall Sentiment Score Detected",
                         description=message_body,
                         isRead=False,
                         datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -120,14 +119,14 @@ class NotificationHandler:
                 if is_email and len(receivers) > 0:
                     mail_obj = MailObject(
                         to=receivers,
-                        subject="SentiView: Positive Overall Sentiment Score Detected",
+                        subject="SentiView - High Overall Sentiment Score Alert",
                         body=message_body
                     )
                     cls.__send_email(mail_obj)
 
                 if is_push:
                     notification = CallNotification(
-                        title="Positive Overall Sentiment Score Detected",
+                        title="High Overall Sentiment Score Detected",
                         description=message_body,
                         isRead=False,
                         datetime=datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ")

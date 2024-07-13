@@ -1,13 +1,10 @@
-from fastapi import APIRouter, UploadFile, File, Query, HTTPException, Depends
+from fastapi import APIRouter
 from app.database.db import DatabaseConnector
 from app.models.action_result import ActionResult
-from datetime import datetime, timedelta
+from datetime import datetime
 from app.models.call_filtering import CallFilter
-import re
 
-from app.utils.auth import get_current_user
-
-filter_router = APIRouter(dependencies=[Depends(get_current_user)])
+filter_router = APIRouter()
 db = DatabaseConnector("calls")
 analytics_db = DatabaseConnector("analytics")
 
