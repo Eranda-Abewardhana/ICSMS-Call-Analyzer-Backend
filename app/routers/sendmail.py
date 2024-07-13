@@ -1,7 +1,7 @@
 from fastapi import APIRouter, BackgroundTasks, Depends
 
 from app.utils.auth import get_current_user
-from app.utils.mailer import send_mail
+from app.utils.mail_sender import send_mail
 from app.models.action_result import ActionResult
 from app.models.send_mail import MailObject
 

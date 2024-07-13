@@ -13,7 +13,7 @@ from app.models.notification_settings import CallSettings
 from app.utils.data_masking import DataMasker
 from app.utils.helpers import get_audio_duration
 from app.utils.keyword_extractor import KeywordExtractor
-from app.utils.mailer import send_mail
+from app.utils.mail_sender import send_mail
 from app.utils.s3 import upload_to_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer

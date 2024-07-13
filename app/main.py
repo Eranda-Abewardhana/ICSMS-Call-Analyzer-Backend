@@ -21,7 +21,7 @@ from app.routers.call import call_router
 from app.routers.sendmail import email_router
 from app.routers.notification import notification_router
 from app.utils.sentiment_analyzer import SentimentAnalyzer
-from app.utils.mailer import send_mail
+from app.utils.mail_sender import send_mail
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
