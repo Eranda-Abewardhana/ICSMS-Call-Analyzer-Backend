@@ -16,7 +16,6 @@ from app.routers.operators import operator_router
 from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
-from app.routers.notification import notification_router
 from app.utils.auth import get_current_user
 from app.utils.notification_handler import NotificationHandler
 from app.utils.sentiment_analyzer import SentimentAnalyzer
@@ -39,7 +38,6 @@ app.include_router(analytics_router, tags=["Call Analytics"])
 app.include_router(settings_router, tags=["Call Settings"])
 app.include_router(operator_router, tags=["Call Operators"])
 app.include_router(filter_router, tags=["Call Filtering"])
-app.include_router(notification_router, tags=["Notifications"])
 
 sentiment_analyzer = SentimentAnalyzer()
 settings_db = DatabaseConnector("settings")
