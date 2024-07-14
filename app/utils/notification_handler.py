@@ -1,28 +1,47 @@
 import logging
+import os
 from datetime import datetime
 from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 from smtplib import SMTP_SSL
+from jinja2 import Environment, FileSystemLoader
 
 from dotenv import load_dotenv
 
 from app.config.config import Configurations
 from app.database.db import DatabaseConnector
 from app.models.call_notification import CallNotification
-from app.models.send_mail import MailObject
+from app.models.mail_object import MailObject
 
 load_dotenv()
 
 
 class NotificationHandler:
     notification_db = DatabaseConnector("notifications")
+    action_link = Configurations.webapp_url + "/call/dashboard"
 
     @classmethod
     def __send_email(cls, mail_obj: MailObject):
-        message = MIMEText(mail_obj.body, "html")
-        message["From"] = Configurations.mail_username
-        message["To"] = ", ".join(mail_obj.to)
-        message["Subject"] = mail_obj.subject
         try:
+            message = MIMEMultipart()
+            message["From"] = formataddr(("SentiView", Configurations.mail_username))
+            message["To"] = ", ".join(mail_obj.to)
+            message["Subject"] = mail_obj.subject
+
+            utils_dir = os.path.dirname(__file__)
+            app_dir = os.path.dirname(utils_dir)
+            template_dir = os.path.join(app_dir, 'templates')
+
+            env = Environment(loader=FileSystemLoader(template_dir))
+            template = env.get_template(mail_obj.template)
+
+            # Render the template with the provided context
+            html_content = template.render(mail_obj.context)
+
+            # Attach the HTML content
+            message.attach(MIMEText(html_content, "html"))
+
             with SMTP_SSL(Configurations.mail_host, Configurations.mail_port) as server:
                 server.login(Configurations.mail_username, Configurations.mail_password)
                 logging.info("Sending the email.")
@@ -40,8 +59,9 @@ class NotificationHandler:
             if is_email and len(receivers) > 0:
                 mail_obj = MailObject(
                     to=receivers,
-                    subject="SentiView - Keywords Detected In Calls",
-                    body=message_body
+                    subject="SentiView Call Analytics - Keywords Detected In Calls",
+                    template_name="keyword_notification.html",
+                    context={"keywords": ', '.join(keywords), "action_link": cls.action_link}
                 )
                 cls.__send_email(mail_obj)
 
@@ -78,20 +98,21 @@ class NotificationHandler:
         cls.notification_db.add_entity(notification)
 
     @classmethod
-    async def send_below_sentiment_notification(cls, lower_threshold: float, current_score: float, is_email=True,
+    async def send_below_sentiment_notification(cls, lower_limit: float, current_score: float, is_email=True,
                                                 is_push=True, receivers: list[str] = []):
-        if lower_threshold > current_score:
+        if lower_limit > current_score:
             try:
                 message_body = (
-                    f"Overall call analytics sentiment score has gone below the threshold: {lower_threshold}. "
+                    f"Overall call analytics sentiment score has gone below the threshold: {lower_limit}. "
                     f"It has been recorded as {current_score}. Note that the above sentiment score is "
                     f"based on the data with last month.")
 
                 if is_email and len(receivers) > 0:
                     mail_obj = MailObject(
                         to=receivers,
-                        subject="SentiView - Low Overall Sentiment Score Alert",
-                        body=message_body
+                        subject="SentiView Call Analytics - Low Overall Sentiment Score Alert",
+                        template="low_score.html",
+                        context={"low": lower_limit, "current": round(current_score, 2), "action_link": cls.action_link}
                     )
                     cls.__send_email(mail_obj)
 
@@ -107,20 +128,21 @@ class NotificationHandler:
                 logging.error(f"Failed to send lower sentiment threshold notifications: {e}")
 
     @classmethod
-    async def send_above_sentiment_notification(cls, upper_threshold: float, current_score: float, is_email=True,
+    async def send_above_sentiment_notification(cls, upper_limit: float, current_score: float, is_email=True,
                                                 is_push=True, receivers: list[str] = []):
-        if upper_threshold < current_score:
+        if upper_limit < current_score:
             try:
                 message_body = (
-                    f"Overall call analytics sentiment score has gone above the threshold: {upper_threshold}. "
+                    f"Overall call analytics sentiment score has gone above the threshold: {upper_limit}. "
                     f"It has been recorded as {current_score}. Note that the above sentiment score is "
                     f"based on the data with last month.")
 
                 if is_email and len(receivers) > 0:
                     mail_obj = MailObject(
                         to=receivers,
-                        subject="SentiView - High Overall Sentiment Score Alert",
-                        body=message_body
+                        subject="SentiView Call Analytics - High Overall Sentiment Score Alert",
+                        template="high_score.html",
+                        context={"high": upper_limit, "current": round(current_score, 2), "action_link": cls.action_link}
                     )
                     cls.__send_email(mail_obj)
 

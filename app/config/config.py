@@ -21,3 +21,4 @@ class Configurations:
     mail_password = os.getenv("MAIL_PASSWORD")
     mail_port = os.getenv("MAIL_PORT", 465)
     status_check_frequency = int(os.getenv("STATUS_CHECK_FREQUENCY", 21600))
+    webapp_url = os.getenv("FRONTEND_URL")
