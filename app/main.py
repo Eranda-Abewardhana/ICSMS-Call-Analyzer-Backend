@@ -1,16 +1,14 @@
 import asyncio
 import json
 import os
-from typing import List
 import redis
 import uvicorn
-from fastapi import FastAPI, WebSocket, Depends
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_utilities import repeat_every
-from starlette.websockets import WebSocketDisconnect
 
 from app.config.config import Configurations
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.routers.filtering import filter_router
 from app.routers.operators import operator_router
 from app.routers.settings import settings_router
@@ -22,7 +20,7 @@ from app.utils.sentiment_analyzer import SentimentAnalyzer
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
-app = FastAPI(title="ICSMS Call Analyzer REST API", dependencies=[Depends(get_current_user)])
+app = FastAPI(title="SentiView Call Analyzer REST API", dependencies=[Depends(get_current_user)])
 redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), decode_responses=True)
 
 app.add_middleware(
@@ -43,40 +41,6 @@ sentiment_analyzer = SentimentAnalyzer()
 settings_db = DatabaseConnector("settings")
 
 
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
-
-    async def send_message(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
-
-
-manager = ConnectionManager()
-
-
-@app.websocket("/ws/notify")
-async def analysis_result(websocket: WebSocket):
-    await manager.connect(websocket)
-    await manager.send_message("From WebSocket Server")
-    print(websocket)
-    try:
-        while True:
-            received_msg = await websocket.receive_text()
-            print(received_msg)
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
-    except Exception as e:
-        print(e)
-
-
 async def redis_listener():
     pubsub = redis_client.pubsub()
     pubsub.subscribe("task_notifications")
@@ -87,8 +51,6 @@ async def redis_listener():
             message = pubsub.get_message(ignore_subscribe_messages=True)
 
             if message is not None:
-                # Send the notification to all connected clients
-                await manager.send_message("From Redis Server")
                 print("Message received from redis channel")
         except Exception as e:
             print(f"Error in redis_listener: {e}")

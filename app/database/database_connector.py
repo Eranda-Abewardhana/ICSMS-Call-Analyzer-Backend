@@ -1,7 +1,9 @@
-import pymongo
+from pymongo import MongoClient
+from pymongo.database import Database
 from bson import ObjectId
 from pydantic import BaseModel
-import motor.motor_asyncio
+from motor import motor_asyncio
+from motor.motor_asyncio import AsyncIOMotorDatabase
 from pymongo import ReturnDocument
 from pymongo.errors import ServerSelectionTimeoutError, PyMongoError
 from bson import json_util
@@ -13,21 +15,27 @@ from app.models.action_result import ActionResult
 
 
 class DatabaseConnector:
-    def __init__(self, collection_name: str):
-        self.__connection_string = os.getenv("MONGO_DB_URL")
-        self.__database_name = "Call_Recordings"
-        self.__async_client = motor.motor_asyncio.AsyncIOMotorClient(self.__connection_string)
-        self.__client = pymongo.MongoClient(self.__connection_string)
-        try:
-            self.__async_client.server_info()
-            self.__async_database = self.__async_client.get_database(self.__database_name)
-            self.__async_collection = self.__async_database.get_collection(collection_name)
+    _connection_string = os.getenv("MONGO_DB_URL")
+    _database_name = "Call_Recordings"
+    _async_client = motor_asyncio.AsyncIOMotorClient(_connection_string)
+    _client = MongoClient(_connection_string)
+    _async_database: AsyncIOMotorDatabase
+    _database: Database
 
-            self.__client.server_info()
-            self.__database = self.__client.get_database(self.__database_name)
-            self.__collection = self.__database.get_collection(collection_name)
+    @classmethod
+    def connect_to_database(cls):
+        try:
+            DatabaseConnector._async_client.server_info()
+            cls._async_database = DatabaseConnector._async_client.get_database(DatabaseConnector._database_name)
+
+            DatabaseConnector._client.server_info()
+            cls._database = DatabaseConnector._client.get_database(DatabaseConnector._database_name)
         except ServerSelectionTimeoutError as e:
-            raise Exception("Database connection timed out")
+            raise Exception(f"Database connection timed out: {e}")
+
+    def __init__(self, collection_name: str):
+        self.__async_collection = DatabaseConnector._async_database.get_collection(collection_name)
+        self.__collection = DatabaseConnector._database.get_collection(collection_name)
 
     async def add_entity_async(self, entity: BaseModel) -> ActionResult:
         action_result = ActionResult(status=True)

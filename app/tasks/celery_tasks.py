@@ -5,9 +5,8 @@ from typing import List
 
 from app.config.celery_config import celery_app, redis_client
 from app.config.config import Configurations
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
-from app.models.call_notification import CallNotification
 from app.models.call_record import CallRecord
 from app.utils.data_masking import DataMasker
 from app.utils.helpers import get_audio_duration

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends
 import requests
 import os
 from urllib.parse import unquote
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.call_operator import CallOperator
 from app.database.aggregation import get_next_operator_id_pipeline, operator_analytics_pipelines

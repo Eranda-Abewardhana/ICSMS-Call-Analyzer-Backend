@@ -5,7 +5,7 @@ from typing import List
 from fastapi import APIRouter, HTTPException, UploadFile, File
 
 from app.config.config import Configurations
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.tasks.celery_tasks import analyze_and_save_calls
 from app.utils.data_masking import DataMasker

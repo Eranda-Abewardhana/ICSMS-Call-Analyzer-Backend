@@ -8,7 +8,7 @@ from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from app.database.aggregation import get_overall_avg_sentiment_score_pipeline
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 
 load_dotenv()
 

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.models.action_result import ActionResult
 from datetime import datetime
 from app.models.call_filtering import CallFilter

@@ -8,7 +8,7 @@ from app.database.aggregation import call_statistics_pipeline, sentiment_percent
     operator_calls_over_time_pipeline, get_all_keywords_pipeline, operator_rating_pipeline, \
     all_operator_sentiment_pipeline, get_topics_distribution_pipeline, sentiment_over_time_pipeline, \
     get_overall_avg_sentiment_score_pipeline
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.models.action_result import ActionResult
 from app.models.analytics_record import AnalyticsRecord
 from app.utils.helpers import merge_operator_analytics_over_time

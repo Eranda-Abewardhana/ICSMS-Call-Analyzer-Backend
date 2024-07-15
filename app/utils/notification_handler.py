@@ -10,7 +10,7 @@ from jinja2 import Environment, FileSystemLoader
 from dotenv import load_dotenv
 
 from app.config.config import Configurations
-from app.database.db import DatabaseConnector
+from app.database.database_connector import DatabaseConnector
 from app.models.call_notification import CallNotification
 from app.models.mail_object import MailObject
 
