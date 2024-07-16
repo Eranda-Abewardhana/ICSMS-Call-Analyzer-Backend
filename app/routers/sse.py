@@ -5,9 +5,8 @@ from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
 
 from app.config.config import Configurations
-from app.models.action_result import ActionResult
 
-server_sent_event = APIRouter()
+sse_router = APIRouter()
 pendingCalls = []
 
 
@@ -23,7 +22,7 @@ async def event_generator():
             yield f"data: {len(pendingCalls)}\n\n"
 
 
-@server_sent_event.get("/sse-pending-calls", response_model=ActionResult)
+@sse_router.get("/sse-pending-calls")
 async def sse(request: Request):
     async def event_publisher():
         async for event in event_generator():

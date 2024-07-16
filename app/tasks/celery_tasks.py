@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from typing import List
 
-from app.config.celery_config import celery_app, redis_client
+from app.config.celery_config import celery_app
 from app.config.config import Configurations
 from app.database.database_connector import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
@@ -123,5 +123,3 @@ def analyze_and_save_calls(filepath_list: List[str]):
         NotificationHandler.send_analysis_success_notification(success_count)
     else:
         NotificationHandler.send_analysis_failed_notification(failed_count)
-
-    redis_client.publish(Configurations.redis_channel, json.dumps({"task_id": 23, "status": "message"}))
