@@ -124,4 +124,4 @@ def analyze_and_save_calls(filepath_list: List[str]):
     else:
         NotificationHandler.send_analysis_failed_notification(failed_count)
 
-    redis_client.publish("task_notifications", json.dumps({"task_id": 23, "status": "message"}))
+    redis_client.publish(Configurations.redis_channel, json.dumps({"task_id": 23, "status": "message"}))

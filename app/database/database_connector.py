@@ -30,6 +30,7 @@ class DatabaseConnector:
 
             DatabaseConnector._client.server_info()
             cls._database = DatabaseConnector._client.get_database(DatabaseConnector._database_name)
+            print("Connected to MongoDB successfully")
         except ServerSelectionTimeoutError as e:
             raise Exception(f"Database connection timed out: {e}")
 

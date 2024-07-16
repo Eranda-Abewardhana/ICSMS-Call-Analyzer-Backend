@@ -22,3 +22,6 @@ class Configurations:
     mail_port = os.getenv("MAIL_PORT", 465)
     status_check_frequency = int(os.getenv("STATUS_CHECK_FREQUENCY", 21600))
     webapp_url = os.getenv("FRONTEND_URL")
+    redis_channel = "task_notifications"
+    redis_host = os.getenv("REDIS_HOST")
+    redis_port = os.getenv("REDIS_PORT")

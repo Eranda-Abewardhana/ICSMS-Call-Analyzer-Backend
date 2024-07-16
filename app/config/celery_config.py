@@ -1,13 +1,11 @@
-import os
-
 import redis
 from celery import Celery
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.config.config import Configurations
 
-celery_app = Celery(__name__, broker=os.getenv("CELERY_BROKER_URL"), backend=os.getenv("CELERY_RESULT_BACKEND"))
-redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), db=0)
+
+celery_app = Celery(__name__, broker=Configurations.celery_broker_url, backend=Configurations.celery_result_backend)
+redis_client = redis.Redis(host=Configurations.redis_host, port=Configurations.redis_port, db=0)
 
 
 celery_app.conf.update(
