@@ -1,5 +1,6 @@
 import asyncio
 import os
+import json
 
 from fastapi import APIRouter, Request
 from starlette.responses import StreamingResponse
@@ -17,9 +18,9 @@ async def event_generator():
         for filename in os.listdir(Configurations.UPLOAD_FOLDER):
             pendingCalls.append(filename.split("_")[-1].split(".")[0])
         if not pendingCalls:
-            yield f"data: 0\n\n"
+            yield f"data: []\n\n"
         else:
-            yield f"data: {len(pendingCalls)}\n\n"
+            yield f"data: {json.dumps(pendingCalls)}\n\n"
 
 
 @sse_router.get("/sse-pending-calls")
