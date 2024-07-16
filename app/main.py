@@ -11,6 +11,7 @@ from app.config.config import Configurations
 from app.database.database_connector import DatabaseConnector
 from app.routers.filtering import filter_router
 from app.routers.operators import operator_router
+from app.routers.serversentevent import server_sent_event
 from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
@@ -20,7 +21,7 @@ from app.utils.sentiment_analyzer import SentimentAnalyzer
 
 os.makedirs(Configurations.UPLOAD_FOLDER, exist_ok=True)
 
-app = FastAPI(title="SentiView Call Analyzer REST API", dependencies=[Depends(get_current_user)])
+app = FastAPI(title="SentiView Call Analyzer REST API")
 redis_client = redis.Redis(host=os.getenv("REDIS_HOST"), port=os.getenv("REDIS_PORT"), decode_responses=True)
 
 app.add_middleware(
@@ -31,11 +32,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(call_router, tags=["Call Recordings"])
-app.include_router(analytics_router, tags=["Call Analytics"])
-app.include_router(settings_router, tags=["Call Settings"])
-app.include_router(operator_router, tags=["Call Operators"])
-app.include_router(filter_router, tags=["Call Filtering"])
+app.include_router(call_router, tags=["Call Recordings"], dependencies=[Depends(get_current_user)])
+app.include_router(analytics_router, tags=["Call Analytics"], dependencies=[Depends(get_current_user)])
+app.include_router(settings_router, tags=["Call Settings"], dependencies=[Depends(get_current_user)])
+app.include_router(operator_router, tags=["Call Operators"], dependencies=[Depends(get_current_user)])
+app.include_router(filter_router, tags=["Call Filtering"], dependencies=[Depends(get_current_user)])
+app.include_router(server_sent_event, tags=["Server Sent Event"])
 
 sentiment_analyzer = SentimentAnalyzer()
 settings_db = DatabaseConnector("settings")
