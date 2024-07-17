@@ -1,5 +1,6 @@
 import json
 import os
+
 import uvicorn
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,12 +8,12 @@ from fastapi_utilities import repeat_every
 
 from app.config.config import Configurations
 from app.database.database_connector import DatabaseConnector
-from app.routers.filtering import filter_router
-from app.routers.operators import operator_router
-from app.routers.sse import sse_router
-from app.routers.settings import settings_router
 from app.routers.analytics import analytics_router
 from app.routers.call import call_router
+from app.routers.filtering import filter_router
+from app.routers.operators import operator_router
+from app.routers.settings import settings_router
+from app.routers.sse import sse_router
 from app.utils.auth import get_current_user
 from app.utils.notification_handler import NotificationHandler
 from app.utils.sentiment_analyzer import SentimentAnalyzer

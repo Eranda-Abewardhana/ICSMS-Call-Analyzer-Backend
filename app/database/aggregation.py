@@ -522,7 +522,8 @@ all_operator_sentiment_pipeline = [
     }
 ]
 
-def get_overall_avg_sentiment_score_pipeline(start, end): 
+
+def get_overall_avg_sentiment_score_pipeline(start, end):
     return [
         {
             '$match': {
@@ -532,18 +533,18 @@ def get_overall_avg_sentiment_score_pipeline(start, end):
                 }
             }
         },
-    {
-        '$group': {
-            '_id': None,
-            'avg_score': {
-                '$avg': '$sentiment_score'
+        {
+            '$group': {
+                '_id': None,
+                'avg_score': {
+                    '$avg': '$sentiment_score'
+                }
+            }
+        },
+        {
+            '$project': {
+                '_id': 0,
+                'avg_score': 1
             }
         }
-    },
-    {
-        '$project': {
-            '_id': 0,
-            'avg_score': 1
-        }
-    }
-]
+    ]

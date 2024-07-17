@@ -1,13 +1,13 @@
 import logging
 import os
 from datetime import datetime
-from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from email.utils import formataddr
 from smtplib import SMTP_SSL
-from jinja2 import Environment, FileSystemLoader
 
 from dotenv import load_dotenv
+from jinja2 import Environment, FileSystemLoader
 
 from app.config.config import Configurations
 from app.database.database_connector import DatabaseConnector
@@ -142,7 +142,8 @@ class NotificationHandler:
                         to=receivers,
                         subject="SentiView Call Analytics - High Overall Sentiment Score Alert",
                         template="high_score.html",
-                        context={"high": upper_limit, "current": round(current_score, 2), "action_link": cls.action_link}
+                        context={"high": upper_limit, "current": round(current_score, 2),
+                                 "action_link": cls.action_link}
                     )
                     cls.__send_email(mail_obj)
 

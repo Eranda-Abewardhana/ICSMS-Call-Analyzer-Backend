@@ -9,6 +9,7 @@ from app.database.database_connector import DatabaseConnector
 from app.models.analytics_record import AnalyticsRecord
 from app.models.call_record import CallRecord
 from app.utils.data_masking import DataMasker
+from app.utils.helpers import extract_call_details_from_filename
 from app.utils.helpers import get_audio_duration
 from app.utils.keyword_extractor import KeywordExtractor
 from app.utils.notification_handler import NotificationHandler
@@ -17,7 +18,6 @@ from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.topic_modler import TopicModeler
 from app.utils.transcriber import Transcriber
-from app.utils.helpers import extract_call_details_from_filename
 
 summary_analyzer = SummaryAnalyzer()
 masking_analyzer = DataMasker()

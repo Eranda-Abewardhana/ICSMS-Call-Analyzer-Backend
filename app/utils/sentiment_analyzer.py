@@ -1,12 +1,12 @@
-from dotenv import load_dotenv
-import boto3
 from datetime import datetime, timedelta
-from app.config.config import Configurations
 
+import boto3
+from dotenv import load_dotenv
 from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from app.config.config import Configurations
 from app.database.aggregation import get_overall_avg_sentiment_score_pipeline
 from app.database.database_connector import DatabaseConnector
 
@@ -46,12 +46,12 @@ class SentimentAnalyzer:
         current_date = datetime.now()
 
         # Try to subtract one month
-        one_month_before = current_date.replace(month=current_date.month-1)
+        one_month_before = current_date.replace(month=current_date.month - 1)
 
         # If we went back to the previous year, adjust the year and month
         if one_month_before.month == current_date.month:
             if current_date.month == 1:
-                one_month_before = one_month_before.replace(year=current_date.year-1, month=12)
+                one_month_before = one_month_before.replace(year=current_date.year - 1, month=12)
             else:
                 # This handles cases where the previous month has fewer days
                 last_day_of_previous_month = (current_date.replace(day=1) - timedelta(days=1)).day
@@ -61,7 +61,8 @@ class SentimentAnalyzer:
     def get_overall_avg_sentiment(self) -> dict:
         today = datetime.today()
         last_month_day = self._get_date_month_before()
-        action_result = self.__analytics_db.run_aggregation_sync(get_overall_avg_sentiment_score_pipeline(last_month_day, today))
+        action_result = self.__analytics_db.run_aggregation_sync(
+            get_overall_avg_sentiment_score_pipeline(last_month_day, today))
         return action_result.data[0]
 
     def analyze_sentiment(self, call_transcription: str) -> tuple[str, float]:

@@ -1,6 +1,7 @@
+import re
+
 from mutagen.mp3 import MP3
 from mutagen.wave import WAVE
-import re
 
 
 def get_audio_duration(audio_file_path: str) -> int:

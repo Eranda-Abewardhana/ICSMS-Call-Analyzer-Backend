@@ -1,9 +1,9 @@
+from collections import Counter
 from datetime import datetime
-
-from fastapi import APIRouter, Query
 from typing import Annotated
 
-from collections import Counter
+from fastapi import APIRouter, Query
+
 from app.database.aggregation import call_statistics_pipeline, sentiment_percentages_pipeline, \
     operator_calls_over_time_pipeline, get_all_keywords_pipeline, operator_rating_pipeline, \
     all_operator_sentiment_pipeline, get_topics_distribution_pipeline, sentiment_over_time_pipeline, \
@@ -63,7 +63,8 @@ async def get_call_statistics(start: TimeStampQuery, end: TimeStampQuery):
     start_date = datetime.strptime(start, "%Y-%m-%d-%H-%M-%S")
     end_date = datetime.strptime(end, "%Y-%m-%d-%H-%M-%S")
     action_result = await calls_db.run_aggregation_async(call_statistics_pipeline(start_date, end_date))
-    avg_score_result = await analytics_db.run_aggregation_async(get_overall_avg_sentiment_score_pipeline(start_date, end_date))
+    avg_score_result = await analytics_db.run_aggregation_async(
+        get_overall_avg_sentiment_score_pipeline(start_date, end_date))
     action_result.data = action_result.data[0]
     action_result.data["avg_score"] = avg_score_result.data[0].get("avg_score") * 10
     return action_result

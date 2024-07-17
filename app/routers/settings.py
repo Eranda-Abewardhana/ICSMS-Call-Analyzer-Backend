@@ -1,4 +1,5 @@
 from fastapi import APIRouter
+
 from app.database.aggregation import get_topics_pipeline
 from app.database.database_connector import DatabaseConnector
 from app.models.action_result import ActionResult

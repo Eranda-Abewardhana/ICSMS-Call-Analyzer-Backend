@@ -1,5 +1,6 @@
-import whisper
 import warnings
+
+import whisper
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
