@@ -10,6 +10,7 @@ from app.models.action_result import ActionResult
 from app.tasks.celery_tasks import analyze_and_save_calls
 from app.utils.data_masking import DataMasker
 from app.utils.keyword_extractor import KeywordExtractor
+from app.utils.s3 import delete_from_s3
 from app.utils.sentiment_analyzer import SentimentAnalyzer
 from app.utils.summary_analyzer import SummaryAnalyzer
 from app.utils.topic_modler import TopicModeler
@@ -37,6 +38,8 @@ async def get_call_record_by_id(call_id: str):
 
 @call_router.delete("/delete-call/{call_id}", response_model=ActionResult)
 async def delete_call_record(call_id: str):
+    action_call = await db.get_entity_by_id_async(call_id)
+    delete_from_s3(action_call.data['call_recording_url'], Configurations.aws_access_key_id, Configurations.aws_secret_access_key)
     action_result_call = await db.delete_entity_async(call_id)
     action_result_analytics = await analytics_db.find_and_delete_entity_async({"call_id": call_id})
     if not action_result_call.status and action_result_analytics.status:
