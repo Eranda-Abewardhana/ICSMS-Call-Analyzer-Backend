@@ -5,4 +5,3 @@ class TextMessages:
     DELETE_SUCCESS = 'Record Deleted'
     NOT_FOUND = 'Resource Not Found'
     FOUND = 'Resource Found'
-

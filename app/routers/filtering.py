@@ -1,13 +1,12 @@
-from fastapi import APIRouter, UploadFile, File, Query, HTTPException, Depends
-from app.database.db import DatabaseConnector
+from datetime import datetime
+
+from fastapi import APIRouter
+
+from app.database.database_connector import DatabaseConnector
 from app.models.action_result import ActionResult
-from datetime import datetime, timedelta
 from app.models.call_filtering import CallFilter
-import re
 
-from app.utils.auth import get_current_user
-
-filter_router = APIRouter(dependencies=[Depends(get_current_user)])
+filter_router = APIRouter()
 db = DatabaseConnector("calls")
 analytics_db = DatabaseConnector("analytics")
 
@@ -39,7 +38,6 @@ async def read_items(call_filtering: CallFilter):
                     filter_query_calls["call_date"]["$lte"] = datetime.strptime(param_value, '%Y-%m-%dT%H:%M:%S.%fZ')
             elif param_name == "call_duration":
                 if param_value != 0:
-
                     min_duration = max(param_value - 60, 0)
                     max_duration = min(param_value + 60, 3600)
                     filter_query_calls["call_duration"] = {"$gte": min_duration, "$lte": max_duration}
@@ -70,5 +68,5 @@ async def read_items(call_filtering: CallFilter):
             # Merge call_record and analytics_record based on the common ID
             merged_record = {**call_record, **analytics_record}
             merged_list.append(merged_record)
-# Return the merged list
+    # Return the merged list
     return ActionResult(data=merged_list)
