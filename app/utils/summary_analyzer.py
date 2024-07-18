@@ -1,8 +1,9 @@
+from typing import List
+
 from dotenv import load_dotenv
 from langchain.prompts import PromptTemplate
 from langchain.schema.output_parser import StrOutputParser
 from langchain_google_genai import ChatGoogleGenerativeAI
-from typing import List
 
 load_dotenv()
 

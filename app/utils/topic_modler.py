@@ -22,4 +22,3 @@ class TopicModeler:
         topic_list = topic.split(',')
         topic_list = [topic.strip() for topic in topic_list]
         return topic_list
-

@@ -1,7 +1,4 @@
-from pydantic import BaseModel, Field, ConfigDict
-from typing import List
-from datetime import datetime
-from bson import ObjectId
+from pydantic import BaseModel, Field
 
 
 class CallFilter(BaseModel):
